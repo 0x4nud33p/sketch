@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./dist/server.js",
+    "dev": "npm run build && npm run start",
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/ws": "^8.5.13",
+    "ws": "^8.18.0"
   },
   "keywords": [],
   "author": "",
