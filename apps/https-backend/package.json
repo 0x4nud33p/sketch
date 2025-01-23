@@ -12,7 +12,8 @@
     "@types/express": "^5.0.0",
     "express": "^4.21.2",
     "@repo/backend-common":"workspace:*",
-    "@repo/common":"workspace:*"
+    "@repo/common":"workspace:*",
+    "@repo/db":"workspace:*"
   },
   "author": "anudeepavula",
   "license": "ISC",
