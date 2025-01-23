@@ -14,7 +14,7 @@
     "@repo/backend-common":"workspace:*",
     "@repo/common":"workspace:*"
   },
-  "author": "",
+  "author": "anudeepavula",
   "license": "ISC",
   "description": "",
   "dependencies": {
