@@ -2,6 +2,7 @@
   "name": "https-backend",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node ./dist/server.js",
     "dev": "npm run build && npm run start",
@@ -22,6 +23,7 @@
     "@types/dotenv": "^8.2.3",
     "@types/jsonwebtoken": "^9.0.7",
     "dotenv": "^16.4.7",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "@repo/db":"workspace:*"
   }
 }
