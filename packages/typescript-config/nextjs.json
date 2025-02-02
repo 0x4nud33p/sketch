@@ -7,9 +7,6 @@
     "moduleResolution": "Bundler",
     "allowJs": true,
     "jsx": "preserve",
-    "noEmit": true,
-    "paths": {
-      "@repo/*": ["workspace:*"]
-    }
+    "noEmit": true
   }
 }
