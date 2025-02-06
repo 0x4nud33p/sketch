@@ -14,6 +14,7 @@ const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as string | jwt.JwtPayload;
+    //@ts-ignore
     req.user = decoded;
     next();
   } catch (error: any) {
