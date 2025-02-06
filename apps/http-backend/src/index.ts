@@ -1,20 +1,22 @@
 import express from "express";
-// import dotenv from "dotenv";
-// import authRoutes from "./routes/authentication.routes.ts";
+import dotenv from "dotenv";
+//@ts-ignore
+import authRoutes from "./routes/authentication.routes";
 
 const app = express();
-// dotenv.config();
+dotenv.config();
 
-//incoming request methods and url
+// incoming request methods and url
  app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
+    console.log(`Request : ${req.method} URL : ${req.url}`);
     next();
 })
+
 const PORT = process.env.PORT || 3002;
 
 app.use(express.json());
 
-// app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
     console.log(`http-backend on ${PORT}`);
