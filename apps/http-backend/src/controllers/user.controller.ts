@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import { prismaClient } from "@repo/db/client";
+import { JWT_SECRET } from "@repo/backend-common";
 
 interface RegisterRequestBody {
   email: string;
@@ -65,7 +66,7 @@ const login = async (req: Request<{}, {}, LoginRequestBody>, res: Response): Pro
       return;
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET as string, { expiresIn: "1d" });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET as string, { expiresIn: "1d" });
 
     res.status(200).json({
       message: "User logged in successfully",
