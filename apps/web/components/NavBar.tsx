@@ -1,11 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button } from "./ui/button";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const NavBar = () => {
-  const router = useRouter();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
@@ -13,12 +11,12 @@ const NavBar = () => {
         <div className="flex items-center justify-between">
           <div className="text-xl font-semibold text-gradient">Sketch</div>
           <div className="flex items-center space-x-6">
-            <Button
-              onClick={() => router.push("/canvas")}
+            <Link
+              href={"/signup"}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Start Drawing
-            </Button>
+            </Link>
           </div>
         </div>
       </div>

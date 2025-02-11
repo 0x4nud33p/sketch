@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Button } from "./ui/button";
+import { Button } from "@repo/ui/button";
 import { ArrowRight } from "lucide-react";
 
 const Hero = () => {

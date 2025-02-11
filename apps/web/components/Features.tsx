@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Card } from "./ui/card";
+import { Card } from "@repo/ui/card";
 import { Layers, Palette, Download, Share2 } from "lucide-react";
 
 const features = [
