@@ -14,7 +14,7 @@ const Hero = () => {
             </span>
           </div>
           <h1 className="text-6xl font-bold leading-tight text-gradient">
-            Create beautiful drawings with ease
+            Create drawings with ease
           </h1>
           <p className="text-xl max-w-2xl mx-auto text-black">
             A modern drawing application that makes it simple to create, share,
