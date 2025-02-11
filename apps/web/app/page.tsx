@@ -1,9 +1,9 @@
-import Room from "../components/pages/Home/Room";
+import Index from "../pages/Index";
 
 export default function Home() {
   return (
     <div>
-      <Room />
+      <Index />
     </div>
   );
 }
