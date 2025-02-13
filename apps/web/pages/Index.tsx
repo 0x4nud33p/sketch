@@ -6,7 +6,7 @@ import Features from "../components/Features";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[#18181b] text-foreground text-[#ffffff]">
       <NavBar />
       <Hero />
       <Features />

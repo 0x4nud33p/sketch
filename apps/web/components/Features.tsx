@@ -34,7 +34,7 @@ const Features = () => {
           <h2 className="text-4xl font-bold text-gradient mb-4">
             Everything you need to create
           </h2>
-          <p className="text-lg text-white/70 max-w-2xl mx-auto">
+          <p className="text-lg text-[#a1a1aa] max-w-2xl mx-auto">
             Powerful features that help you bring your ideas to life
           </p>
         </div>
@@ -42,13 +42,13 @@ const Features = () => {
           {features.map((feature, index) => (
             <Card
               key={index}
-              className="glass-card p-6 transition-transform hover:-translate-y-1 duration-300"
+              className="glass-card bg-[#27272a] p-6 transition-transform hover:-translate-y-1 duration-300"
             >
-              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
+              <div className="h-12 w-12 rounded-lg flex items-center justify-center mb-4 text-white">
                 {feature.icon}
               </div>
-              <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-              <p className="text-black">{feature.description}</p>
+              <h3 className="text-xl text-white font-semibold mb-2">{feature.title}</h3>
+              <p className=" text-[#a1a1aa]">{feature.description}</p>
             </Card>
           ))}
         </div>
