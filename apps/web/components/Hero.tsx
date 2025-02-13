@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Button } from "@repo/ui/button";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const Hero = () => {
   return (
@@ -21,13 +21,13 @@ const Hero = () => {
             and collaborate on your ideas in real-time.
           </p>
           <div className="flex items-center justify-center space-x-2 pt-4">
-            <Button
-              size="lg"
-              className="bg-[#fef08a] border border-black p-3 rounded-lg text-black hover:bg-[#fef08a]/90 flex items-center"
+            <Link
+              href={"/signin"}
+              className="bg-[#fef08a] border lg border-black p-3 rounded-lg text-black hover:bg-[#fef08a]/90 flex items-center"
             >
               Try it now 
               <ArrowRight className="ml-1.5 h-5 w-5" />
-            </Button>
+            </Link>
           </div>
         </div>
         <div className="mt-16 glass-card rounded-lg p-1 animate-float">

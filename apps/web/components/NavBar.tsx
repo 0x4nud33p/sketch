@@ -12,7 +12,7 @@ const NavBar = () => {
           <div className="text-xl font-semibold text-gradient">Sketch</div>
           <div className="flex items-center space-x-6">
             <Link
-              href={"/signup"}
+              href={"/signin"}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Start Drawing
