@@ -1,65 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Pencil, Square, Circle, X } from 'lucide-react';
-
-type controlsProps = {
-  onShapeSelect: (shape: ShapeType) => void;
-  onClear: () => void;
-  selectedShape: ShapeType;
-  onColorChange: (color: string) => void;
-  currentColor: string;
-};
-
-export type ShapeType = 'pencil' | 'circle' | 'rectangle';
-
-export const Controls: React.FC<controlsProps> = ({
-  onShapeSelect,
-  onClear,
-  selectedShape,
-  onColorChange,
-  currentColor,
-}) => {
-  return (
-    <div className="w-fit mx-auto flex justify-center items-center gap-4 p-4 bg-[#27272a] bg-opacity-80 rounded-lg shadow-lg">
-      {[
-        { shape: 'pencil', Icon: Pencil },
-        { shape: 'rectangle', Icon: Square },
-        { shape: 'circle', Icon: Circle },
-      ].map(({ shape, Icon }) => (
-        <button
-          key={shape}
-          className={`w-12 h-12 flex justify-center items-center rounded-lg border-2 transition-all duration-300 hover:scale-110
-          ${
-            selectedShape === shape
-              ? 'bg-[#fef08a] text-black border-[#fef08a]'
-              : 'bg-transparent text-[#fef08a] border-[#fef08a]'
-          }`}
-          onClick={() => onShapeSelect(shape as ShapeType)}
-        >
-          <Icon size={24} color={selectedShape === shape ? 'black' : 'white'} />
-        </button>
-      ))}
-      <label
-        className="w-12 h-12 rounded-lg border-2 border-[#fef08a] cursor-pointer transition-all duration-300 hover:scale-110"
-        style={{ backgroundColor: currentColor }}
-      >
-        <input
-          type="color"
-          className="hidden"
-          value={currentColor}
-          onChange={(e) => onColorChange(e.target.value)}
-        />
-      </label>
-      <button
-        className="w-12 h-12 flex justify-center items-center rounded-lg border-2 border-[#f87171] text-[#f87171] transition-all duration-300 hover:scale-110 hover:bg-[#f87171] hover:text-black"
-        onClick={onClear}
-      >
-        <X size={24} color="currentColor" />
-      </button>
-    </div>
-  );
-};
+import { ShapeType } from './types';
+import { Controls } from './Controls';
 
 interface Line {
   points: [number, number][];
