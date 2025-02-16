@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { ShapeType } from './types';
-import { Controls } from './Controls';
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { ShapeType } from "./types";
+import { Controls } from "./Controls";
 
 interface Line {
   points: [number, number][];
@@ -29,98 +29,114 @@ const Canvas = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
-  const [selectedShape, setSelectedShape] = useState<ShapeType>('pencil');
+  const [selectedShape, setSelectedShape] = useState<ShapeType>("pencil");
   const [circles, setCircles] = useState<Circle[]>([]);
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
-  const [color, setColor] = useState('#000000');
+  const [color, setColor] = useState("#000000");
 
-  useEffect(() => {
+  const redraw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.lineCap = 'round';
-        ctx.lineWidth = 2;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-        const handleMouseDown = (e: MouseEvent) => {
-          const rect = canvas.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-
-          if (selectedShape === 'pencil') {
-            setIsDrawing(true);
-            setCurrentLine({ points: [[x, y]], color });
-          } else if (selectedShape === 'circle') {
-            setCircles([...circles, { x, y, radius: 0, color }]);
-          } else if (selectedShape === 'rectangle') {
-            setRectangles([...rectangles, { x, y, width: 0, height: 0, color }]);
-          }
-        };
-
-        const handleMouseMove = (e: MouseEvent) => {
-          const rect = canvas.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-
-          if (selectedShape === 'pencil' && isDrawing && currentLine) {
-            const newPoints = [...currentLine.points, [x, y]];
-            setCurrentLine({ ...currentLine, points: newPoints });
-            redraw(ctx);
-          } else if (selectedShape === 'circle' && circles.length > 0) {
-            const lastCircle = circles[circles.length - 1];
-            const radius = Math.sqrt((x - lastCircle.x) ** 2 + (y - lastCircle.y) ** 2);
-            const updatedCircles = circles.slice(0, -1).concat({ ...lastCircle, radius });
-            setCircles(updatedCircles);
-            redraw(ctx);
-          } else if (selectedShape === 'rectangle' && rectangles.length > 0) {
-            const lastRect = rectangles[rectangles.length - 1];
-            const width = x - lastRect.x;
-            const height = y - lastRect.y;
-            const updatedRects = rectangles.slice(0, -1).concat({ ...lastRect, width, height });
-            setRectangles(updatedRects);
-            redraw(ctx);
-          }
-        };
-
-        const handleMouseUp = () => {
-          setIsDrawing(false);
-          if (currentLine && currentLine.points.length > 1 && selectedShape === 'pencil') {
-            setLines([...lines, currentLine]);
-          }
-          setCurrentLine(null);
-        };
-
-        const handleMouseOut = () => {
-          setIsDrawing(false);
-          setCurrentLine(null);
-        };
-
-        canvas.addEventListener('mousedown', handleMouseDown);
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('mouseup', handleMouseUp);
-        canvas.addEventListener('mouseout', handleMouseOut);
-
-        return () => {
-          canvas.removeEventListener('mousedown', handleMouseDown);
-          canvas.removeEventListener('mousemove', handleMouseMove);
-          canvas.removeEventListener('mouseup', handleMouseUp);
-          canvas.removeEventListener('mouseout', handleMouseOut);
-        };
-      }
-    }
-  }, [currentLine, lines, selectedShape, circles, rectangles, isDrawing, color]);
-
-  const redraw = (ctx: CanvasRenderingContext2D) => {
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     lines.forEach((line) => drawLine(ctx, line));
     circles.forEach((circle) => drawCircle(ctx, circle));
     rectangles.forEach((rect) => drawRectangle(ctx, rect));
 
-    if (isDrawing && selectedShape === 'pencil' && currentLine) {
+    if (isDrawing && selectedShape === "pencil" && currentLine) {
       drawLine(ctx, currentLine);
     }
+  }, [lines, circles, rectangles, isDrawing, currentLine, selectedShape]);
+
+  useEffect(() => {
+    redraw();
+  }, [redraw]);
+
+  const handleMouseDown = (e: MouseEvent) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    setIsDrawing(true);
+
+    if (selectedShape === "pencil") {
+      setCurrentLine({ points: [[x, y]], color });
+    } else if (selectedShape === "circle") {
+      setCircles((prevCircles) => [...prevCircles, { x, y, radius: 0, color }]);
+    } else if (selectedShape === "rectangle") {
+      setRectangles((prevRectangles) => [
+        ...prevRectangles,
+        { x, y, width: 0, height: 0, color },
+      ]);
+    }
   };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDrawing || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (selectedShape === "pencil" && currentLine) {
+      setCurrentLine((prevLine) => ({
+        ...prevLine!,
+        points: [...prevLine!.points, [x, y]],
+      }));
+    } else if (selectedShape === "circle" && circles.length > 0) {
+      setCircles((prevCircles) => {
+        const updatedCircles = [...prevCircles];
+        const lastCircle = updatedCircles.pop();
+        if (!lastCircle) return prevCircles;
+        const radius = Math.sqrt((x - lastCircle.x) ** 2 + (y - lastCircle.y) ** 2);
+        return [...updatedCircles, { ...lastCircle, radius }];
+      });
+    } else if (selectedShape === "rectangle" && rectangles.length > 0) {
+      setRectangles((prevRectangles) => {
+        const updatedRects = [...prevRectangles];
+        const lastRect = updatedRects.pop();
+        if (!lastRect) return prevRectangles;
+        return [
+          ...updatedRects,
+          { ...lastRect, width: x - lastRect.x, height: y - lastRect.y },
+        ];
+      });
+    }
+    redraw();
+  };
+
+  const handleMouseUp = useCallback(() => {
+    setIsDrawing(false);
+    if (selectedShape === "pencil" && currentLine && currentLine.points.length > 1) {
+      setLines((prevLines) => [...prevLines, currentLine]);
+    }
+    setCurrentLine(null);
+  }, [currentLine, selectedShape]);
+
+  const handleMouseOut = useCallback(() => {
+    setIsDrawing(false);
+    setCurrentLine(null);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("mouseout", handleMouseOut);
+
+    return () => {
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseup", handleMouseUp);
+      canvas.removeEventListener("mouseout", handleMouseOut);
+    };
+  }, [handleMouseDown, handleMouseMove, handleMouseUp, handleMouseOut]);
 
   const drawLine = (ctx: CanvasRenderingContext2D, line: Line) => {
     ctx.strokeStyle = line.color;
@@ -145,23 +161,16 @@ const Canvas = () => {
   };
 
   const handleShapeSelect = (shape: ShapeType) => {
-  setSelectedShape(shape);
-  setIsDrawing(false);
-  setCurrentLine(null);
-};
+    setSelectedShape(shape);
+    setIsDrawing(false);
+    setCurrentLine(null);
+  };
 
   const handleClear = () => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        setLines([]);
-        setCircles([]);
-        setRectangles([]);
-        setCurrentLine(null);
-      }
-    }
+    setLines([]);
+    setCircles([]);
+    setRectangles([]);
+    setCurrentLine(null);
   };
 
   return (
