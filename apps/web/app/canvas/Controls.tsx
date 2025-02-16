@@ -9,7 +9,7 @@ export const Controls: React.FC<controlsProps> = ({
   currentColor,
 }) => {
   return (
-    <div className="w-fit mx-auto flex justify-center items-center gap-4 p-4 bg-[#27272a] bg-opacity-80 rounded-lg shadow-lg">
+    <div className="bg-[#18181b] flex justify-center items-center gap-4 p-4">
       {[
         { shape: 'pencil', Icon: Pencil },
         { shape: 'rectangle', Icon: Square },

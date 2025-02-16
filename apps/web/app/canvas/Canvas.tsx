@@ -174,7 +174,7 @@ const Canvas = () => {
   };
 
   return (
-    <div>
+    <div className="w-screen h-screen overflow-hidden">
       <Controls
         onShapeSelect={handleShapeSelect}
         onClear={handleClear}
@@ -182,7 +182,15 @@ const Canvas = () => {
         onColorChange={setColor}
         currentColor={color}
       />
-      <canvas ref={canvasRef} width="2000" height="1000" className="bg-[#18181b]"></canvas>
+    <div>
+      <canvas
+        ref={canvasRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+        className="bg-[#18181b] overflow-hidden"
+      >
+      </canvas>
+    </div>
     </div>
   );
 };
