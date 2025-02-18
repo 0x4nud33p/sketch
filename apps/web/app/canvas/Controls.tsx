@@ -1,7 +1,7 @@
 import { Pencil, Square, Circle, X } from 'lucide-react';
-import { controlsProps, ShapeType } from './types';
+import { ControlsProps, ShapeType } from './types';
 
-export const Controls: React.FC<controlsProps> = ({
+export const Controls: React.FC<ControlsProps> = ({
   onShapeSelect,
   onClear,
   selectedShape,

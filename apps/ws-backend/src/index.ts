@@ -1,67 +1,90 @@
-import express from "express";
-import { Request, Response } from "express";
-import { Server } from "ws";
+import express, { Request, Response } from "express";
+import { Server, WebSocket } from "ws";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
-const server = app.listen(process.env.PORT || 3000, () => {
-  console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+const server = app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
 
 const wss = new Server({ server });
 
-const rooms: { [key: string]: Set<any> } = {};
+interface DrawingData {
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  [key: string]: any;
+}
 
-wss.on("connection", (ws) => {
-  console.log("New WebSocket connection", ws.listeners);
+interface WebSocketWithRoom extends WebSocket {
+  room?: string;
+}
 
-  ws.on("message", (message) => {
-    console.log("Received:", message);
-    const parsedMessage = JSON.parse(message.toString());
-    const { room, drawingData } = parsedMessage;
-    if (room && drawingData) {
-      if (rooms[room]) {
-        rooms[room].forEach((client) => {
-          if (client !== ws && client.readyState === client.OPEN) {
-            client.send(JSON.stringify({ drawingData }));
+interface RoomData {
+  clients: Set<WebSocket>;
+  drawings: DrawingData[];
+}
+
+const rooms: Record<string, RoomData> = {};
+
+wss.on("connection", (ws: WebSocketWithRoom) => {
+  console.log("New WebSocket connection");
+
+  ws.on("message", (message: string) => {
+    try {
+      const parsedMessage: { type: string; room?: string; drawingData?: DrawingData } = JSON.parse(message);
+      const { type, room, drawingData } = parsedMessage;
+
+      if (type === "join_room" && room) {
+        console.log(`Client joined room: ${room}`);
+
+        if (!rooms[room]) {
+          rooms[room] = { clients: new Set(), drawings: [] };
+        }
+
+        rooms[room].clients.add(ws);
+        ws.room = room;
+
+        // Send previous drawing data to the new client
+        ws.send(JSON.stringify({ type: "initial_data", drawings: rooms[room].drawings }));
+      }
+
+      if (type === "drawing" && room && drawingData) {
+        if (!rooms[room]) return;
+
+        // Store drawing data for new users joining
+        rooms[room].drawings.push(drawingData);
+
+        // Broadcast drawing update to all clients in the room
+        rooms[room].clients.forEach((client) => {
+          if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: "drawing", drawingData }));
           }
         });
       }
+    } catch (error) {
+      console.error("Error parsing WebSocket message:", error);
     }
-  });
-
-  ws.on("join_room", (room: string) => {
-    console.log(`Joining room: ${room}`);
-
-    if (!rooms[room]) {
-      rooms[room] = new Set();
-    }
-    rooms[room].add(ws);
-
-    ws.send(JSON.stringify({ message: `Joined room: ${room}` }));
-
-    rooms[room].forEach((client) => {
-      if (client !== ws && client.readyState === client.OPEN) {
-        client.send(JSON.stringify({ message: `${ws.url} has joined the room` }));
-      }
-    });
   });
 
   ws.on("close", () => {
     console.log("WebSocket connection closed");
 
-    Object.keys(rooms).forEach((room) => {
-      rooms[room]!.delete(ws);
+    if (ws.room && rooms[ws.room]) {
+      rooms[ws.room]?.clients.delete(ws);
 
-      if (rooms[room]!.size === 0) {
-        delete rooms[room];
+      if (rooms[ws.room]?.clients.size === 0) {
+        delete rooms[ws.room]; // Delete empty rooms
       }
-    });
+    }
   });
 });
 
-app.get("/", (req : Request, res : Response) => {
+app.get("/", (req: Request, res: Response) => {
   res.send("Server is running. WebSocket server is active.");
 });
