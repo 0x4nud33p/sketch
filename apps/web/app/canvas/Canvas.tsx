@@ -42,14 +42,21 @@ const Canvas = () => {
   
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
-  useEffect(() => {
-  if (!roomId) {
-    createRoomId().then((id) => {
-      const params = new URLSearchParams(window.location.search);
-      params.set("roomid", id);
-      window.history.replaceState({}, "", `?${params.toString()}`);
-    });
-  }
+   useEffect(() => {
+    if (!roomId) {
+      fetch('/api/createroom')
+        .then((response) => response.json())
+        .then((data) => {
+          const id = data.id;
+          setRoomId(id);
+          const params = new URLSearchParams(window.location.search);
+          params.set('roomid', id);
+          window.history.replaceState({}, '', `?${params.toString()}`);
+        })
+        .catch((error) => {
+          console.error('Error creating room:', error);
+        });
+    }
   }, [roomId]);
 
   useEffect(() => {
