@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ShapeType } from "./types";
 import { Controls } from "./Controls";
 import { useSearchParams } from 'next/navigation';
-import prisma from "@repo/db/client";
 
 interface Line {
   points: [number, number][];
@@ -35,27 +34,28 @@ const Canvas = () => {
   const [selectedShape, setSelectedShape] = useState<ShapeType>("pencil");
   const [circles, setCircles] = useState<Circle[]>([]);
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
+  const [currentCircle, setCurrentCircle] = useState<Circle | null>(null);
+  const [currentRectangle, setCurrentRectangle] = useState<Rectangle | null>(null);
   const [color, setColor] = useState("#000000");
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const searchParams = useSearchParams();
   const [roomId, setRoomId] = useState<string>("");
-  
+
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
+    setRoomId(searchParams?.get('roomid') || '');
+    console.log(roomId);
     if (!roomId) {
       fetch('/api/createroom')
         .then((response) => response.json())
         .then((data) => {
-          const id = data.id;
-          setRoomId(id);
+          setRoomId(data.id);
           const params = new URLSearchParams(window.location.search);
-          params.set('roomid', id);
+          params.set('roomid', data.id);
           window.history.replaceState({}, '', `?${params.toString()}`);
         })
-        .catch((error) => {
-          console.error('Error creating room:', error);
-        });
+        .catch(console.error);
     }
   }, [roomId]);
 
@@ -64,7 +64,6 @@ const Canvas = () => {
       ws.current = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080");
 
       ws.current.onopen = () => {
-        console.log("Connected to WebSocket server");
         ws.current?.send(JSON.stringify({ type: "join_room", roomId }));
       };
 
@@ -74,22 +73,10 @@ const Canvas = () => {
           setLines((prevLines) => [...prevLines, data.drawingData]);
         }
       };
-
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-
-      ws.current.onclose = () => {
-        console.log("Disconnected from WebSocket server");
-        // Optionally implement reconnection logic here
-      };
     };
 
     connectWebSocket();
-
-    return () => {
-      ws.current?.close();
-    };
+    return () => ws.current?.close();
   }, [roomId]);
 
   const redraw = useCallback(() => {
@@ -99,41 +86,41 @@ const Canvas = () => {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     lines.forEach((line) => drawLine(ctx, line));
     circles.forEach((circle) => drawCircle(ctx, circle));
     rectangles.forEach((rect) => drawRectangle(ctx, rect));
-  }, [lines, circles, rectangles]);
+
+    if (currentLine) drawLine(ctx, currentLine);
+    if (currentCircle) drawCircle(ctx, currentCircle);
+    if (currentRectangle) drawRectangle(ctx, currentRectangle);
+  }, [lines, circles, rectangles, currentLine, currentCircle, currentRectangle]);
 
   useEffect(() => {
     let animationFrameId: number;
-
     const animate = () => {
       redraw();
       animationFrameId = requestAnimationFrame(animate);
     };
-
     animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    return () => cancelAnimationFrame(animationFrameId);
   }, [redraw]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     setIsDrawing(true);
     setStartPoint({ x, y });
-    
+
     if (selectedShape === "pencil") {
       setCurrentLine({ points: [[x, y]], color });
     }
-    
-    lastMousePosition.current = { x, y }; // Store initial mouse position
+
+    lastMousePosition.current = { x, y };
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -143,47 +130,42 @@ const Canvas = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    lastMousePosition.current = { x, y }; // Update last mouse position
+    lastMousePosition.current = { x, y };
 
     if (selectedShape === "pencil" && currentLine) {
       setCurrentLine((prevLine) => ({
         ...prevLine!,
         points: [...prevLine!.points, [x, y]],
       }));
+    } else if (selectedShape === "circle" && startPoint) {
+      const radius = Math.sqrt((x - startPoint.x) ** 2 + (y - startPoint.y) ** 2);
+      setCurrentCircle({ x: startPoint.x, y: startPoint.y, radius, color });
+    } else if (selectedShape === "rectangle" && startPoint) {
+      setCurrentRectangle({ 
+        x: startPoint.x, 
+        y: startPoint.y, 
+        width: x - startPoint.x, 
+        height: y - startPoint.y, 
+        color 
+      });
     }
-    
-    redraw();
   };
 
   const handleMouseUp = () => {
-    if (!canvasRef.current || !startPoint || !lastMousePosition.current) return;
+    if (!startPoint || !lastMousePosition.current) return;
 
     if (selectedShape === "pencil" && currentLine) {
       setLines((prev) => [...prev, currentLine]);
       ws.current?.send(JSON.stringify({ type: "drawing", roomId, drawingData: currentLine }));
-      
-      // Reset current line after sending to server
       setCurrentLine(null);
-    } else if (selectedShape === "circle" && startPoint) {
-      const radius = Math.sqrt(
-        Math.pow(lastMousePosition.current.x - startPoint.x, 2) +
-        Math.pow(lastMousePosition.current.y - startPoint.y, 2)
-      );
-      
-      const newCircle: Circle = { x: startPoint.x, y: startPoint.y, radius, color };
-      setCircles((prev) => [...prev, newCircle]);
-      
-      // Optionally send circle data over WebSocket
-    } else if (selectedShape === "rectangle" && startPoint) {
-      const width = lastMousePosition.current.x - startPoint.x;
-      const height = lastMousePosition.current.y - startPoint.y;
-
-      const newRectangle: Rectangle = { x: startPoint.x, y: startPoint.y, width, height, color };
-      setRectangles((prev) => [...prev, newRectangle]);
-      
-      // Optionally send rectangle data over WebSocket
+    } else if (selectedShape === "circle" && currentCircle) {
+      setCircles((prev) => [...prev, currentCircle]);
+      setCurrentCircle(null);
+    } else if (selectedShape === "rectangle" && currentRectangle) {
+      setRectangles((prev) => [...prev, currentRectangle]);
+      setCurrentRectangle(null);
     }
-    
+
     setIsDrawing(false);
     setStartPoint(null);
   };
@@ -192,66 +174,42 @@ const Canvas = () => {
     ctx.strokeStyle = line.color;
     ctx.beginPath();
     ctx.moveTo(line.points[0][0], line.points[0][1]);
-    
     line.points.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
-    
     ctx.stroke();
   };
 
   const drawCircle = (ctx: CanvasRenderingContext2D, circle: Circle) => {
     ctx.strokeStyle = circle.color;
     ctx.beginPath();
-    
     ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-    
     ctx.stroke();
   };
 
   const drawRectangle = (ctx: CanvasRenderingContext2D, rect: Rectangle) => {
     ctx.strokeStyle = rect.color;
-    
     ctx.beginPath();
-    
     ctx.rect(rect.x, rect.y, rect.width, rect.height);
-    
     ctx.stroke();
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden">
-      <Controls
-        onColorChange={setColor}
-        currentColor={color}
-        onShapeSelect={setSelectedShape}
-        onClear={() => { 
-          setLines([]); 
-          setCircles([]); 
-          setRectangles([]); 
-        }}
-        selectedShape={selectedShape}
+      <Controls 
+         onColorChange={setColor} 
+         currentColor={color} 
+         onShapeSelect={setSelectedShape} 
       />
-      
-      <canvas
-        ref={canvasRef}
-        width="2000"
-        height="1000"
-        className="bg-[#18181b]"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+      <canvas 
+        ref={canvasRef} 
+        width="2000" 
+        height="1000" 
+        className="bg-[#18181b]" 
+        onMouseDown={handleMouseDown} 
+        onMouseMove={handleMouseMove} 
+        onMouseUp={handleMouseUp} 
       />
-      
-   </div>
- );
+    </div>
+  );
 };
 
 export default Canvas;
-
-const createRoomId = async () => {
-  const newRoom = await prisma.room.create({
-    data: {} 
-  });
-  return newRoom.id;
-};
-
-
