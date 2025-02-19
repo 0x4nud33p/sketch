@@ -79,6 +79,24 @@ const Canvas = () => {
     return () => ws.current?.close();
   }, [roomId]);
 
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    setLines([]);
+    setCircles([]);
+    setRectangles([]);
+    setCurrentLine(null);
+    setCurrentCircle(null);
+    setCurrentRectangle(null);
+  };
+
+
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -197,7 +215,9 @@ const Canvas = () => {
       <Controls 
          onColorChange={setColor} 
          currentColor={color} 
-         onShapeSelect={setSelectedShape} 
+         onShapeSelect={setSelectedShape}
+         selectedShape={selectedShape}
+         onClear={clearCanvas}
       />
       <canvas 
         ref={canvasRef} 
