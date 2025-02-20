@@ -12,6 +12,7 @@ import {
 } from "@repo/ui/card";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import axios from "axios";
 
 export default function Room() {
   const [roomId, setRoomId] = useState("");
@@ -26,9 +27,7 @@ export default function Room() {
 
     setLoading(true);
     try {
-      // Logic to join the room using roomId
       toast.success(`Joined room: ${roomId}`);
-      // Redirect to the room with query parameter
       router.push(`/canvas?roomid=${encodeURIComponent(roomId)}`);
     } catch (error) {
       console.error("Failed to join room:", error);
@@ -41,8 +40,8 @@ export default function Room() {
   const handleCreateRoom = async () => {
     setLoading(true);
     try {
-      // Redirect to /canvas for creating a new room
-      router.push("/canvas");
+      const { data } = await axios.post("/api/createroom",{});
+      router.push(`/canvas?roomid=${encodeURIComponent(data.id)}`);
     } catch (error) {
       console.error("Failed to create room:", error);
       toast.error("Failed to create room. Please try again.");

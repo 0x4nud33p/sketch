@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ShapeType } from "./types";
 import { Controls } from "./Controls";
-import { useSearchParams } from 'next/navigation';
+import { redirect, useSearchParams } from 'next/navigation';
 
 interface Line {
   points: [number, number][];
@@ -44,20 +44,12 @@ const Canvas = () => {
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    setRoomId(searchParams?.get('roomid') || '');
-    console.log(roomId);
-    if (!roomId) {
-      fetch('/api/createroom')
-        .then((response) => response.json())
-        .then((data) => {
-          setRoomId(data.id);
-          const params = new URLSearchParams(window.location.search);
-          params.set('roomid', data.id);
-          window.history.replaceState({}, '', `?${params.toString()}`);
-        })
-        .catch(console.error);
+    const roomId = searchParams?.get('roomid');
+    if(!roomId){
+      redirect("/join-room");
     }
-  }, [roomId]);
+  }, [searchParams]); 
+
 
   useEffect(() => {
     const connectWebSocket = () => {
