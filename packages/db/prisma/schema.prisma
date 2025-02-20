@@ -22,17 +22,16 @@ model User {
 }
 
 model Room {
-  id   String @id @default(uuid()) 
-  name String
-  createdAt DateTime @default(now()) 
-  Drawing Drawing[]
+  id        String     @id @default(uuid()) 
+  name      String
+  createdAt DateTime   @default(now()) 
+  drawings  Drawing[]
 }
-
 
 model Drawing {
   id        String   @id @default(uuid())
   roomId    String
-  room      Room     @relation(fields: [id], references: [id], onDelete: Cascade)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   x         Float
   y         Float
   color     String
