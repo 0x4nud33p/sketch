@@ -3,72 +3,71 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ShapeType } from "./types";
 import { Controls } from "./Controls";
-import { redirect, useSearchParams } from 'next/navigation';
+import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
 
-interface Line {
-  points: [number, number][];
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Drawing {
+  points?: [number, number][];
+  startX?: number;
+  startY?: number;
+  width?: number;
+  height?: number;
+  centerX?: number;
+  centerY?: number;
+  radius?: number;
   color: string;
 }
 
-interface Circle {
-  x: number;
-  y: number;
-  radius: number;
-  color: string;
-}
+const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
+  ctx.strokeStyle = shape.color;
+  ctx.beginPath();
 
-interface Rectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-}
+  if (shape.points) {
+    ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+    shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
+    ctx.stroke();
+  } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
+    ctx.strokeRect(shape.startX, shape.startY, shape.width, shape.height);
+  } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
+    ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+};
 
 const Canvas = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentLine, setCurrentLine] = useState<Line | null>(null);
-  const [lines, setLines] = useState<Line[]>([]);
-  const [selectedShape, setSelectedShape] = useState<ShapeType>("pencil");
-  const [circles, setCircles] = useState<Circle[]>([]);
-  const [rectangles, setRectangles] = useState<Rectangle[]>([]);
-  const [currentCircle, setCurrentCircle] = useState<Circle | null>(null);
-  const [currentRectangle, setCurrentRectangle] = useState<Rectangle | null>(null);
-  const [color, setColor] = useState("#000000");
-  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const searchParams = useSearchParams();
-  const [roomId, setRoomId] = useState<string>("");
 
-  const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedShape, setSelectedShape] = useState<ShapeType>("pencil");
+  const [color, setColor] = useState("#000000");
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [roomId, setRoomId] = useState("");
+  const [lines, setLines] = useState<Drawing[]>([]);
+  const [circles, setCircles] = useState<Drawing[]>([]);
+  const [rectangles, setRectangles] = useState<Drawing[]>([]);
+  const [currentDrawing, setCurrentDrawing] = useState<Drawing | null>(null);
 
   useEffect(() => {
-    const roomId = searchParams?.get('roomid');
-    if (!roomId) {
-      redirect("/join-room");
-    } else {
-      setRoomId(roomId);
-      fetchDrawings(roomId);
-    }
+    const roomIdParam = searchParams?.get("roomid");
+    if (!roomIdParam) return redirect("/join-room");
+    setRoomId(roomIdParam);
+    fetchDrawings(roomIdParam);
   }, [searchParams]);
 
   const fetchDrawings = async (roomId: string) => {
     try {
-      const response = await axios.get(`/api/drawings?roomId=${roomId}`);
-      setLines(response.data.lines || []);
-      setCircles(response.data.circles || []);
-      setRectangles(response.data.rectangles || []);
+      const { data } = await axios.get(`/api/drawings?roomId=${roomId}`);
+      setLines(data.lines || []);
+      setCircles(data.circles || []);
+      setRectangles(data.rectangles || []);
     } catch (error) {
       console.error("Failed to fetch drawings", error);
-    }
-  };
-
-  const saveDrawing = async (data: Line | Circle | Rectangle, type: string) => {
-    try {
-      await axios.post("/api/drawings", { roomId, type, data });
-    } catch (error) {
-      console.error("Failed to save drawing", error);
     }
   };
 
@@ -78,9 +77,7 @@ const Canvas = () => {
       setLines([]);
       setCircles([]);
       setRectangles([]);
-      setCurrentLine(null);
-      setCurrentCircle(null);
-      setCurrentRectangle(null);
+      setCurrentDrawing(null);
     } catch (error) {
       console.error("Failed to clear canvas", error);
     }
@@ -93,82 +90,76 @@ const Canvas = () => {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    lines.forEach((line) => drawLine(ctx, line));
-    circles.forEach((circle) => drawCircle(ctx, circle));
-    rectangles.forEach((rect) => drawRectangle(ctx, rect));
-
-    if (currentLine) drawLine(ctx, currentLine);
-    if (currentCircle) drawCircle(ctx, currentCircle);
-    if (currentRectangle) drawRectangle(ctx, currentRectangle);
-  }, [lines, circles, rectangles, currentLine, currentCircle, currentRectangle]);
+    [...lines, ...circles, ...rectangles, currentDrawing].forEach((shape) => {
+      if (shape) drawShape(ctx, shape);
+    });
+  }, [lines, circles, rectangles, currentDrawing]);
 
   useEffect(() => {
-    let animationFrameId: number;
-    const animate = () => {
-      redraw();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => cancelAnimationFrame(animationFrameId);
+    requestAnimationFrame(redraw);
   }, [redraw]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    const { x, y } = getMousePosition(e);
     setIsDrawing(true);
     setStartPoint({ x, y });
 
-    if (selectedShape === "pencil") {
-      setCurrentLine({ points: [[x, y]], color });
-    }
+    const newDrawing: Drawing = { color };
+    if (selectedShape === "pencil") newDrawing.points = [[x, y]];
+    if (selectedShape === "rectangle") Object.assign(newDrawing, { startX: x, startY: y, width: 0, height: 0 });
+    if (selectedShape === "circle") Object.assign(newDrawing, { centerX: x, centerY: y, radius: 0 });
+    
+    setCurrentDrawing(newDrawing);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !canvasRef.current || !startPoint) return;
+    if (!isDrawing || !startPoint) return;
+    const { x, y } = getMousePosition(e);
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (selectedShape === "pencil" && currentLine) {
-      setCurrentLine((prevLine) => ({ ...prevLine!, points: [...prevLine!.points, [x, y]] }));
-    }
+    setCurrentDrawing((prev) => {
+      if (!prev) return prev;
+      if (selectedShape === "pencil") prev.points?.push([x, y]);
+      if (selectedShape === "rectangle") Object.assign(prev, { width: x - prev.startX!, height: y - prev.startY! });
+      if (selectedShape === "circle") prev.radius = Math.hypot(x - startPoint.x, y - startPoint.y);
+      return { ...prev };
+    });
   };
 
   const handleMouseUp = () => {
-    if (!startPoint) return;
-
-    if (selectedShape === "pencil" && currentLine) {
-      setLines((prev) => [...prev, currentLine]);
-      saveDrawing(currentLine, "line");
-      setCurrentLine(null);
-    }
+    if (!startPoint || !currentDrawing) return;
+    
+    if (selectedShape === "pencil") setLines([...lines, currentDrawing]);
+    if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
+    if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
+    
+    // saveDrawing(currentDrawing, selectedShape);
     setIsDrawing(false);
     setStartPoint(null);
+    setCurrentDrawing(null);
+  };
+
+  const getMousePosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    return { x: e.clientX - rect!.left, y: e.clientY - rect!.top };
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden">
-      <Controls 
-        onColorChange={setColor} 
-        currentColor={color} 
+      <Controls
+        onColorChange={setColor}
+        currentColor={color}
         onShapeSelect={setSelectedShape}
         selectedShape={selectedShape}
         onClear={clearCanvas}
       />
-      <canvas 
-        ref={canvasRef} 
-        width="2000" 
-        height="1000" 
-        className="bg-[#18181b]" 
-        onMouseDown={handleMouseDown} 
-        onMouseMove={handleMouseMove} 
-        onMouseUp={handleMouseUp} 
+      <canvas
+        ref={canvasRef}
+        width="2000"
+        height="1000"
+        className="bg-[#18181b]"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
       />
     </div>
   );
