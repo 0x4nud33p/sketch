@@ -6,13 +6,15 @@ import { Button } from "@repo/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
+import { P } from "node_modules/better-auth/dist/auth-DMS7IE-x";
 
-export default function Room() {
   interface Room {
     id: string;
     name: string;
     createdAt: string;
   }
+
+export default function Room() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [showPopup, setShowPopup] = useState(false);
@@ -35,24 +37,30 @@ export default function Room() {
     router.push(`/canvas?roomid=${encodeURIComponent(roomId)}`);
   };
 
-  const handleCreateRoom = async () => {
-    if (!newRoomName.trim()) {
-      toast.error("Room name cannot be empty.");
-      return;
-    }
+ const handleCreateRoom = async () => {
+  if (!newRoomName.trim()) {
+    toast.error("Room name cannot be empty.");
+    return;
+  }
 
-    try {
-      const response = await axios.post("/api/createroom", {
-        roomName: newRoomName,
-      });
-      setRooms([...rooms, response.data.room]);
-      toast.success("Room created successfully.");
-      setShowPopup(false);
-      setNewRoomName("");
-    } catch (error) {
-      toast.error("Failed to create room.");
-    }
-  };
+  try {
+    const response = await fetch("/api/createroom",{ 
+      method : "POST",
+      headers : {
+        "Content-Type": "application/json"
+      },
+      body : JSON.stringify({roomName : newRoomName })
+    });
+    console.log(response);
+    // setRooms([...rooms, { id: response.id, name: newRoomName, createdAt : new Date(response.data.createdAt).toLocaleDateString()}]);
+    toast.success("Room created successfully.");
+    setShowPopup(false);
+    setNewRoomName("");
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to create room.");
+  }
+};
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#18181b] text-white">

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ShapeType } from "./types";
 import { Controls } from "./Controls";
 import { redirect, useSearchParams } from 'next/navigation';
+import axios from "axios";
 
 interface Line {
   points: [number, number][];
@@ -27,7 +28,6 @@ interface Rectangle {
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const ws = useRef<WebSocket | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentLine, setCurrentLine] = useState<Line | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
@@ -45,49 +45,46 @@ const Canvas = () => {
 
   useEffect(() => {
     const roomId = searchParams?.get('roomid');
-    if(!roomId){
+    if (!roomId) {
       redirect("/join-room");
+    } else {
+      setRoomId(roomId);
+      fetchDrawings(roomId);
     }
-  }, [searchParams]); 
+  }, [searchParams]);
 
-
-  useEffect(() => {
-    const connectWebSocket = () => {
-      ws.current = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080");
-
-      ws.current.onopen = () => {
-        ws.current?.send(JSON.stringify({ type: "join_room", roomId }));
-      };
-
-      ws.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "drawing") {
-          setLines((prevLines) => [...prevLines, data.drawingData]);
-        }
-      };
-    };
-
-    connectWebSocket();
-    return () => ws.current?.close();
-  }, [roomId]);
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    setLines([]);
-    setCircles([]);
-    setRectangles([]);
-    setCurrentLine(null);
-    setCurrentCircle(null);
-    setCurrentRectangle(null);
+  const fetchDrawings = async (roomId: string) => {
+    try {
+      const response = await axios.get(`/api/drawings?roomId=${roomId}`);
+      setLines(response.data.lines || []);
+      setCircles(response.data.circles || []);
+      setRectangles(response.data.rectangles || []);
+    } catch (error) {
+      console.error("Failed to fetch drawings", error);
+    }
   };
 
+  const saveDrawing = async (data: Line | Circle | Rectangle, type: string) => {
+    try {
+      await axios.post("/api/drawings", { roomId, type, data });
+    } catch (error) {
+      console.error("Failed to save drawing", error);
+    }
+  };
+
+  const clearCanvas = async () => {
+    try {
+      await axios.delete(`/api/drawings?roomId=${roomId}`);
+      setLines([]);
+      setCircles([]);
+      setRectangles([]);
+      setCurrentLine(null);
+      setCurrentCircle(null);
+      setCurrentRectangle(null);
+    } catch (error) {
+      console.error("Failed to clear canvas", error);
+    }
+  };
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -129,8 +126,6 @@ const Canvas = () => {
     if (selectedShape === "pencil") {
       setCurrentLine({ points: [[x, y]], color });
     }
-
-    lastMousePosition.current = { x, y };
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -140,76 +135,31 @@ const Canvas = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    lastMousePosition.current = { x, y };
-
     if (selectedShape === "pencil" && currentLine) {
-      setCurrentLine((prevLine) => ({
-        ...prevLine!,
-        points: [...prevLine!.points, [x, y]],
-      }));
-    } else if (selectedShape === "circle" && startPoint) {
-      const radius = Math.sqrt((x - startPoint.x) ** 2 + (y - startPoint.y) ** 2);
-      setCurrentCircle({ x: startPoint.x, y: startPoint.y, radius, color });
-    } else if (selectedShape === "rectangle" && startPoint) {
-      setCurrentRectangle({ 
-        x: startPoint.x, 
-        y: startPoint.y, 
-        width: x - startPoint.x, 
-        height: y - startPoint.y, 
-        color 
-      });
+      setCurrentLine((prevLine) => ({ ...prevLine!, points: [...prevLine!.points, [x, y]] }));
     }
   };
 
   const handleMouseUp = () => {
-    if (!startPoint || !lastMousePosition.current) return;
+    if (!startPoint) return;
 
     if (selectedShape === "pencil" && currentLine) {
       setLines((prev) => [...prev, currentLine]);
-      ws.current?.send(JSON.stringify({ type: "drawing", roomId, drawingData: currentLine }));
+      saveDrawing(currentLine, "line");
       setCurrentLine(null);
-    } else if (selectedShape === "circle" && currentCircle) {
-      setCircles((prev) => [...prev, currentCircle]);
-      setCurrentCircle(null);
-    } else if (selectedShape === "rectangle" && currentRectangle) {
-      setRectangles((prev) => [...prev, currentRectangle]);
-      setCurrentRectangle(null);
     }
-
     setIsDrawing(false);
     setStartPoint(null);
-  };
-
-  const drawLine = (ctx: CanvasRenderingContext2D, line: Line) => {
-    ctx.strokeStyle = line.color;
-    ctx.beginPath();
-    ctx.moveTo(line.points[0][0], line.points[0][1]);
-    line.points.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
-    ctx.stroke();
-  };
-
-  const drawCircle = (ctx: CanvasRenderingContext2D, circle: Circle) => {
-    ctx.strokeStyle = circle.color;
-    ctx.beginPath();
-    ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-    ctx.stroke();
-  };
-
-  const drawRectangle = (ctx: CanvasRenderingContext2D, rect: Rectangle) => {
-    ctx.strokeStyle = rect.color;
-    ctx.beginPath();
-    ctx.rect(rect.x, rect.y, rect.width, rect.height);
-    ctx.stroke();
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden">
       <Controls 
-         onColorChange={setColor} 
-         currentColor={color} 
-         onShapeSelect={setSelectedShape}
-         selectedShape={selectedShape}
-         onClear={clearCanvas}
+        onColorChange={setColor} 
+        currentColor={color} 
+        onShapeSelect={setSelectedShape}
+        selectedShape={selectedShape}
+        onClear={clearCanvas}
       />
       <canvas 
         ref={canvasRef} 

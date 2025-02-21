@@ -6,7 +6,6 @@ export async function middleware(request: NextRequest) {
   const { data: session } = await betterFetch<Session>("/api/auth/get-session", {
     baseURL: request.nextUrl.origin,
     headers: {
-      // Get the cookie from the request
       cookie: request.headers.get("cookie") || "",
     },
   });
@@ -19,5 +18,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"], // Runs only on the root path
+  matcher: ["/"],
 };
