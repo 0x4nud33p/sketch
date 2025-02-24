@@ -42,34 +42,31 @@ const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const searchParams = useSearchParams();
-
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedShape, setSelectedShape] = useState<ShapeType>("pencil");
   const [color, setColor] = useState("#000000");
   const [startPoint, setStartPoint] = useState<Point | null>(null);
-  const [roomId, setRoomId] = useState("");
+  const [roomId, setRoomId] = useState<string>("");
   const [lines, setLines] = useState<Drawing[]>([]);
   const [circles, setCircles] = useState<Drawing[]>([]);
   const [rectangles, setRectangles] = useState<Drawing[]>([]);
   const [currentDrawing, setCurrentDrawing] = useState<Drawing | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     const roomIdParam = searchParams?.get("roomid");
-    if (!roomIdParam) return redirect("/join-room");
-    setRoomId(roomIdParam);
-    fetchDrawings(roomIdParam);
-  }, [searchParams]);
+    if (!roomIdParam) return redirect("/join");
 
-  const fetchDrawings = async (roomId: string) => {
-    try {
-      const { data } = await axios.get(`/api/drawings?roomId=${roomId}`);
-      setLines(data.lines || []);
-      setCircles(data.circles || []);
-      setRectangles(data.rectangles || []);
-    } catch (error) {
-      console.error("Failed to fetch drawings", error);
-    }
-  };
+    setRoomId(roomIdParam);
+
+    wsRef.current = new WebSocket("ws://localhost:8080");
+    wsRef.current.onopen = () => {
+      console.log("WebSocket connected");
+      wsRef.current?.send(
+        JSON.stringify({ type: "join_room", room: roomIdParam })
+      );
+    };
+  }, [searchParams]);
 
   const clearCanvas = async () => {
     try {
@@ -132,7 +129,15 @@ const Canvas = () => {
     if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
     
-    // saveDrawing(currentDrawing, selectedShape);
+    if (wsRef.current && currentDrawing) {
+    wsRef.current.send(
+      JSON.stringify({
+        type: "drawing",
+        room : roomId,
+        drawingData: currentDrawing
+      })
+    );
+  }
     setIsDrawing(false);
     setStartPoint(null);
     setCurrentDrawing(null);

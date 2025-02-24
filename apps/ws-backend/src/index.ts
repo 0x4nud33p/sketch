@@ -55,8 +55,13 @@ wss.on("connection", (ws: WebSocketWithRoom) => {
       }
 
       if (type === "drawing" && room && drawingData) {
+        console.log("drawingdata:",drawingData);
+        console.log("room inside drawing",room)
         if (!rooms[room]) return;
-
+        if (!rooms[room]) {
+          console.warn(`Room ${room} does not exist`);
+          return;
+        }
         // Store drawing data for new users joining
         rooms[room].drawings.push(drawingData);
 
