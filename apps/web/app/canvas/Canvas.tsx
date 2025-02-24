@@ -68,6 +68,22 @@ const Canvas = () => {
     };
   }, [searchParams]);
 
+  useEffect(() => {
+  if (!wsRef.current) return;
+
+  wsRef.current.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+
+    if (message.type === "initial_data") {
+      setLines(message.drawings.filter((d: Drawing) => d.points));
+      setRectangles(message.drawings.filter((d: Drawing) => d.startX !== undefined));
+      setCircles(message.drawings.filter((d: Drawing) => d.centerX !== undefined));
+
+      requestAnimationFrame(redraw);
+    }
+  };
+}, []);
+
   const clearCanvas = async () => {
     try {
       await axios.delete(`/api/drawings?roomId=${roomId}`);
