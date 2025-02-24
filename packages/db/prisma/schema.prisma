@@ -30,9 +30,15 @@ model Drawing {
   id        String   @id @default(uuid())
   roomId    String
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  x         Float
-  y         Float
   color     String
   size      Float
   createdAt DateTime @default(now())
+  points    Json?    
+  startX    Float?   
+  startY    Float?   
+  width     Float?   
+  height    Float?   
+  centerX   Float?   
+  centerY   Float?   
+  radius    Float?     
 }

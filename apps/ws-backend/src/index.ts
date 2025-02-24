@@ -58,7 +58,7 @@ async function getDrawingsFromDB(roomId: string) {
   }
 }
 
-async function storeDrawingsToDb(roomId: string, drawings: Drawing[]) {
+async function storeDrawingsToDb(roomId: string, drawings: Drawing) {
   try {
     const room = await prisma.room.findUnique({
       where: { id: roomId },
@@ -69,16 +69,8 @@ async function storeDrawingsToDb(roomId: string, drawings: Drawing[]) {
       return;
     }
 
-    const formattedDrawings = drawings.map((drawing) => ({
-      roomId: roomId,
-      x: drawing.startX ?? drawing.centerX ?? 0,
-      y: drawing.startY ?? drawing.centerY ?? 0,
-      color: drawing.color,
-      size: drawing.width ?? drawing.radius ?? 10,
-    }));
-
-    await prisma.drawing.createMany({
-      data: formattedDrawings,
+    await prisma.drawing.create({
+      data: drawings
     });
 
     console.log("Drawings stored successfully.");
