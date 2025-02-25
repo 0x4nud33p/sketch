@@ -8,10 +8,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
+// Create HTTP server
 const server = app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
 
+// Create WebSocket server
 const wss = new Server({ server });
 
 interface Drawing {
@@ -24,6 +26,7 @@ interface Drawing {
   centerY?: number;
   radius?: number;
   color: string;
+  size?: number;
   [key: string]: any;
 }
 
@@ -32,129 +35,145 @@ interface WebSocketWithRoom extends WebSocket {
 }
 
 interface RoomData {
-  clients: Set<WebSocket>;
+  clients: Set<WebSocketWithRoom>;
   drawings: Drawing[];
 }
 
 const rooms: Record<string, RoomData> = {};
 
-async function getDrawingsFromDB(roomId: string) {
+// Database functions
+async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
   try {
     const drawings = await prisma.drawing.findMany({
       where: { roomId },
       orderBy: { createdAt: "asc" },
     });
-
-    console.log("Fetched Drawings:", drawings);
-    return drawings;
+    
+    return drawings.map(d => ({
+      ...d,
+      points: d.points as [number, number][] || undefined,
+      startX: d.startX ?? undefined,
+      startY: d.startY ?? undefined,
+      width: d.width ?? undefined,
+      height: d.height ?? undefined,
+      centerX: d.centerX ?? undefined,
+      centerY: d.centerY ?? undefined,
+      radius: d.radius ?? undefined,
+      size: d.size || 10
+    }));
   } catch (error) {
     console.error("Error fetching drawings:", error);
     return [];
   }
 }
 
-
-async function storeDrawingsToDb(roomId: string, drawings: Drawing[]) {
+async function storeDrawingsToDb(roomId: string, drawings: Drawing[]): Promise<void> {
   try {
-    const room = await prisma.room.findUnique({
-      where: { id: roomId },
-    });
-    console.log("room found to store in db",room);
-    if (!room) {
-      console.log("Room not found!");
-      return;
-    }
-
-    const formattedDrawings = drawings.map((drawing) => ({
-      roomId: roomId,
-      points: drawing.points ? drawing.points : undefined,
-      startX: drawing.startX ?? null,
-      startY: drawing.startY ?? null,
-      width: drawing.width ?? null,
-      height: drawing.height ?? null,
-      centerX: drawing.centerX ?? null,
-      centerY: drawing.centerY ?? null,
-      radius: drawing.radius ?? null,
+    const formattedDrawings = drawings.map(drawing => ({
+      roomId,
+      points: drawing.points || undefined,
+      startX: drawing.startX ?? undefined,
+      startY: drawing.startY ?? undefined,
+      width: drawing.width ?? undefined,
+      height: drawing.height ?? undefined,
+      centerX: drawing.centerX ?? undefined,
+      centerY: drawing.centerY ?? undefined,
+      radius: drawing.radius ?? undefined,
       color: drawing.color,
-      size: drawing.width ?? drawing.radius ?? 10,
+      size: drawing.size ?? 10,
     }));
-    console.log("fomrateddrawing before storing dn db:",formattedDrawings);
-    
+
     await prisma.drawing.createMany({
       data: formattedDrawings,
+      skipDuplicates: true,
     });
-
-    console.log("Drawings stored successfully.");
+    console.log(`Saved ${formattedDrawings.length} drawings for room ${roomId}`);
   } catch (error) {
     console.error("Error storing drawings:", error);
   }
 }
 
+// WebSocket server setup
 wss.on("connection", (ws: WebSocketWithRoom) => {
   console.log("New WebSocket connection");
 
   ws.on("message", async (message: string) => {
     try {
-      const parsedMessage: { type: string; room?: string; drawingData?: Drawing } = JSON.parse(message);
+      const parsedMessage = JSON.parse(message);
       const { type, room, drawingData } = parsedMessage;
 
       if (type === "join_room" && room) {
         console.log(`Client joined room: ${room}`);
+        ws.room = room;
 
+        // Create room if it doesn't exist
         if (!rooms[room]) {
-          rooms[room] = { clients: new Set(), drawings: [] };
+          rooms[room] = {
+            clients: new Set(),
+            drawings: []
+          };
+
+          // Ensure room exists in database
+          await prisma.room.upsert({
+            where: { id: room },
+            update: {},
+            create: { id: room, name: `Room ${room}` },
+          });
         }
 
         rooms[room].clients.add(ws);
-        ws.room = room;
 
-        try {
-          const initialData = await getDrawingsFromDB(room);
-          ws.send(JSON.stringify({ type: "initial_drawings", data: initialData }));
-        } catch (error) {
-          console.error("Error sending initial drawings:", error);
-        }
+        // Send existing drawings from database
+        const initialData = await getDrawingsFromDB(room);
+        ws.send(JSON.stringify({
+          type: "initial_drawings",
+          data: initialData
+        }));
       }
 
       if (type === "drawing" && room && drawingData) {
-        console.log("Drawing received for room:", room);
-        console.log("drawing data inside drawing ws",drawingData);
         if (!rooms[room]) {
-          console.warn(`Room ${room} does not exist`);
+          console.warn(`Received drawing for non-existent room: ${room}`);
           return;
         }
 
+        // Add to in-memory store and broadcast
         rooms[room].drawings.push(drawingData);
-
-        rooms[room].clients.forEach((client) => {
+        
+        rooms[room].clients.forEach(client => {
           if (client !== ws && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: "drawing", drawingData }));
+            client.send(JSON.stringify({
+              type: "drawing",
+              drawingData
+            }));
           }
         });
       }
     } catch (error) {
-      console.error("Error parsing WebSocket message:", error);
+      console.error("Error handling message:", error);
     }
   });
 
   ws.on("close", async () => {
     console.log("WebSocket connection closed");
-
+    
     if (ws.room && rooms[ws.room]) {
-      if (rooms[ws.room]?.clients.size === 1) {
-        console.log(`Storing drawings for room ${ws.room} before closing.`);
-        await storeDrawingsToDb(ws.room, rooms[ws.room]?.drawings ?? []);
-      }
+      const room = rooms[ws.room];
+      
+      // Remove client from room
+      room?.clients.delete(ws);
 
-      rooms[ws.room]?.clients.delete(ws);
-
-      if (rooms[ws.room]?.clients.size === 0) {
+      // If last client, save drawings to DB
+      if (room?.clients.size === 0) {
+        console.log(`Saving drawings for room ${ws.room}`);
+        await storeDrawingsToDb(ws.room, room.drawings);
         delete rooms[ws.room];
       }
     }
   });
 });
 
+// Health check endpoint
 app.get("/", (req: Request, res: Response) => {
-  res.send("Server is running. WebSocket server is active.");
+  res.send("WebSocket server is running");
 });

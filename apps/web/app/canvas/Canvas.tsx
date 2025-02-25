@@ -28,7 +28,7 @@ const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.beginPath();
 
   if (shape.points) {
-    ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+     ctx.moveTo(shape.points[0][0], shape.points[0][1]);
     shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.stroke();
   } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
@@ -81,6 +81,7 @@ const Canvas = () => {
   };
   }, [searchParams]);
 
+  // clearing the canvas
   const clearCanvas = async () => {
     try {
       await axios.delete(`/api/drawings?roomId=${roomId}`);
