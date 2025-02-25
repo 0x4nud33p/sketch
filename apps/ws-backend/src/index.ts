@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { Server, WebSocket } from "ws";
 import dotenv from "dotenv";
+import prisma from "@repo/db/client";
 
 dotenv.config();
 
