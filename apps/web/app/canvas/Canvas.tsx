@@ -66,6 +66,19 @@ const Canvas = () => {
         JSON.stringify({ type: "join_room", room: roomIdParam })
       );
     };
+    wsRef.current.onclose = () => {
+    console.log("WebSocket disconnected");
+  };
+
+  const handleBeforeUnload = () => {
+    wsRef.current?.close();
+  };
+  window.addEventListener("beforeunload", handleBeforeUnload);
+
+  return () => {
+    wsRef.current?.close();
+    window.removeEventListener("beforeunload", handleBeforeUnload);
+  };
   }, [searchParams]);
 
   const clearCanvas = async () => {
