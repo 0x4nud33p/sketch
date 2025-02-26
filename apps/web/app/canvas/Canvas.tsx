@@ -28,6 +28,7 @@ const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.beginPath();
 
   if (shape.points) {
+    //@ts-ignore
     ctx.moveTo(shape.points[0][0], shape.points[0][1]);
     shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.stroke();
@@ -69,49 +70,58 @@ useEffect(() => {
     ws.send(JSON.stringify({ type: "join_room", room: roomIdParam }));
   };
 
-  ws.onmessage = (event) => {
+ ws.onmessage = (event) => {
   try {
     const data = JSON.parse(event.data);
     console.log("Received WebSocket data:", data);
 
-    if (data.type === "initial_drawings" && Array.isArray(data.data)) {
+    // Handle Initial Drawings
+    if (data.type === "initial_drawings") {
+      if (!Array.isArray(data.data)) {
+        console.error("Invalid initial_drawings data:", data.data);
+        return;
+      }
+
       const newLines: Drawing[] = [];
       const newCircles: Drawing[] = [];
       const newRectangles: Drawing[] = [];
 
-      data.data.forEach((shape) => {
+      data.data.forEach((shape: Drawing) => {
         if (shape.points) {
-          newLines.push({
-            points: shape.points,
-            color: shape.color,
-          });
+          newLines.push({ points: shape.points, color: shape.color });
         } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
-          newCircles.push({
-            centerX: shape.centerX,
-            centerY: shape.centerY,
-            radius: shape.radius,
-            color: shape.color,
-          });
+          newCircles.push({ centerX: shape.centerX, centerY: shape.centerY, radius: shape.radius, color: shape.color });
         } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
-          newRectangles.push({
-            startX: shape.startX,
-            startY: shape.startY,
-            width: shape.width,
-            height: shape.height,
-            color: shape.color,
-          });
+          newRectangles.push({ startX: shape.startX, startY: shape.startY, width: shape.width, height: shape.height, color: shape.color });
         }
       });
+
+      console.log("Setting initial drawings:", { newLines, newCircles, newRectangles });
 
       setLines(newLines);
       setCircles(newCircles);
       setRectangles(newRectangles);
     }
+
+    // Handle Real-Time Drawings 
+    if (data.type === "drawing") {
+      if (!data.drawingData) { 
+        console.error("Invalid drawing data:", data);
+        return;
+      }
+      const shape = data.drawingData;
+        if (shape.points) {
+        setLines((prevLines) => [...prevLines, { points: shape.points, color: shape.color }]);
+      } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
+        setCircles((prevCircles) => [...prevCircles, { centerX: shape.centerX, centerY: shape.centerY, radius: shape.radius, color: shape.color }]);
+      } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
+        setRectangles((prevRectangles) => [...prevRectangles, { startX: shape.startX, startY: shape.startY, width: shape.width, height: shape.height, color: shape.color }]);
+      }
+    }
   } catch (error) {
     console.error("Error parsing WebSocket message:", error);
   }
 };
-
   ws.onclose = () => console.log("WebSocket disconnected");
   ws.onerror = (error) => console.error("WebSocket error:", error);
 
@@ -181,8 +191,10 @@ useEffect(() => {
     if (selectedShape === "pencil") setLines([...lines, currentDrawing]);
     if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
-    
+
+    console.log("current_drawing",currentDrawing);
     if (wsRef.current && currentDrawing) {
+      console.log("current_drawing",currentDrawing);
       wsRef.current.send(
         JSON.stringify({
           type: "drawing",

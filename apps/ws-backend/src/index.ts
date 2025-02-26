@@ -39,6 +39,7 @@ interface RoomData {
 
 const rooms: Record<string, RoomData> = {};
 
+// get initial drawings from the database handler
 async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
   try {
     const drawings = await prisma.drawing.findMany({
@@ -124,6 +125,7 @@ wss.on("connection", (ws: WebSocketWithRoom) => {
         rooms[room].drawings.push(drawingData);
         
         rooms[room].clients.forEach(client => {
+          console.log("drawing data real time",drawingData);
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
               type: "drawing",
