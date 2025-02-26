@@ -5,7 +5,6 @@ import { ShapeType } from "./types";
 import { Controls } from "./Controls";
 import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { toast } from "sonner";
 
 interface Point {
   x: number;
