@@ -46,7 +46,7 @@ async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
       where: { roomId },
       orderBy: { createdAt: "asc" },
     });
-    return drawings.map(d => ({
+    return drawings.map((d) => ({
       ...d,
       points: d.points as [number, number][] || undefined,
       startX: d.startX ?? undefined,

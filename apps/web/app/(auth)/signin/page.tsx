@@ -27,7 +27,6 @@ export default function SignUpWithGoogle() {
         provider: "google",
         callbackURL: "/",
       });
-      toast.success("Signed up with Google successfully!");
     } catch (error) {
       console.error("Google sign up failed:", error);
       toast.error("Google sign up failed. Please try again.");
