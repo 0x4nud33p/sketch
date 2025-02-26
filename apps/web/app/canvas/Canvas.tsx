@@ -28,7 +28,7 @@ const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.beginPath();
 
   if (shape.points) {
-     ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+    ctx.moveTo(shape.points[0][0], shape.points[0][1]);
     shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.stroke();
   } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
@@ -53,35 +53,74 @@ const Canvas = () => {
   const [currentDrawing, setCurrentDrawing] = useState<Drawing | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    const roomIdParam = searchParams?.get("roomid");
-    if (!roomIdParam) return redirect("/join");
+useEffect(() => {
+  const roomIdParam = searchParams?.get("roomid");
+  if (!roomIdParam) {
+    redirect("/join");
+    return;
+  }
+  setRoomId(roomIdParam);
 
-    setRoomId(roomIdParam);
+  const ws = new WebSocket("ws://localhost:8080");
+  wsRef.current = ws;
 
-    wsRef.current = new WebSocket("ws://localhost:8080");
-    wsRef.current.onopen = () => {
-      console.log("WebSocket connected");
-      wsRef.current?.send(
-        JSON.stringify({ type: "join_room", room: roomIdParam })
-      );
-    };
-    wsRef.current.onclose = () => {
-    console.log("WebSocket disconnected");
+  ws.onopen = () => {
+    console.log("WebSocket connected");
+    ws.send(JSON.stringify({ type: "join_room", room: roomIdParam }));
   };
 
-  const handleBeforeUnload = () => {
-    wsRef.current?.close();
-  };
-  window.addEventListener("beforeunload", handleBeforeUnload);
+  ws.onmessage = (event) => {
+  try {
+    const data = JSON.parse(event.data);
+    console.log("Received WebSocket data:", data);
+
+    if (data.type === "initial_drawings" && Array.isArray(data.data)) {
+      const newLines: Drawing[] = [];
+      const newCircles: Drawing[] = [];
+      const newRectangles: Drawing[] = [];
+
+      data.data.forEach((shape) => {
+        if (shape.points) {
+          newLines.push({
+            points: shape.points,
+            color: shape.color,
+          });
+        } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
+          newCircles.push({
+            centerX: shape.centerX,
+            centerY: shape.centerY,
+            radius: shape.radius,
+            color: shape.color,
+          });
+        } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
+          newRectangles.push({
+            startX: shape.startX,
+            startY: shape.startY,
+            width: shape.width,
+            height: shape.height,
+            color: shape.color,
+          });
+        }
+      });
+
+      setLines(newLines);
+      setCircles(newCircles);
+      setRectangles(newRectangles);
+    }
+  } catch (error) {
+    console.error("Error parsing WebSocket message:", error);
+  }
+};
+
+  ws.onclose = () => console.log("WebSocket disconnected");
+  ws.onerror = (error) => console.error("WebSocket error:", error);
 
   return () => {
-    wsRef.current?.close();
-    window.removeEventListener("beforeunload", handleBeforeUnload);
+    ws.close();
   };
-  }, [searchParams]);
+}, [searchParams]);
 
-  // clearing the canvas
+
   const clearCanvas = async () => {
     try {
       await axios.delete(`/api/drawings?roomId=${roomId}`);
@@ -144,14 +183,14 @@ const Canvas = () => {
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
     
     if (wsRef.current && currentDrawing) {
-    wsRef.current.send(
-      JSON.stringify({
-        type: "drawing",
-        room : roomId,
-        drawingData: currentDrawing
-      })
-    );
-  }
+      wsRef.current.send(
+        JSON.stringify({
+          type: "drawing",
+          room: roomId,
+          drawingData: currentDrawing,
+        })
+      );
+    }
     setIsDrawing(false);
     setStartPoint(null);
     setCurrentDrawing(null);
