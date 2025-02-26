@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import ToastProvider from "./providers/ToastProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="light">
       <body className={`${geistSans.className} ${spaceGrotesk.className} bg-white`}>
+        <ToastProvider />
         {children}
       </body>
     </html>
