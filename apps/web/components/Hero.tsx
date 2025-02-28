@@ -31,10 +31,14 @@ const Hero = () => {
           </div>
         </div>
         <div className="mt-16 glass-card rounded-lg p-1 animate-float">
-          <div className="aspect-video rounded-lg bg-background/80 overflow-hidden">
-            <div className="w-full h-full bg-[url('https://picsum.photos/seed/picsum/200/300')] bg-center bg-cover" />
-          </div>
+        <div className="aspect-video rounded-lg bg-background/80 overflow-hidden">
+          <img
+            src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzQ5MnNubmRvdHg5aXBreHVtM2E1Z2c1dTEyMjE0MXl2c2tmMHptYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/704WKWDtTjQWIoW7uJ/giphy.gif" 
+            alt="Project Demo"
+            className="w-full h-full object-cover"
+          />
         </div>
+      </div>
       </div>
     </div>
   );
