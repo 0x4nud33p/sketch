@@ -73,7 +73,6 @@ useEffect(() => {
  ws.onmessage = (event) => {
   try {
     const data = JSON.parse(event.data);
-    console.log("Received WebSocket data:", data);
 
     // Handle Initial Drawings
     if (data.type === "initial_drawings") {
@@ -95,8 +94,6 @@ useEffect(() => {
           newRectangles.push({ startX: shape.startX, startY: shape.startY, width: shape.width, height: shape.height, color: shape.color });
         }
       });
-
-      console.log("Setting initial drawings:", { newLines, newCircles, newRectangles });
 
       setLines(newLines);
       setCircles(newCircles);
@@ -192,9 +189,7 @@ useEffect(() => {
     if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
 
-    console.log("current_drawing",currentDrawing);
     if (wsRef.current && currentDrawing) {
-      console.log("current_drawing",currentDrawing);
       wsRef.current.send(
         JSON.stringify({
           type: "drawing",
