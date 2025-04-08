@@ -5,23 +5,8 @@ import { ShapeType } from "./types";
 import { Controls } from "./Controls";
 import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
+import { Drawing, Point } from "./types"
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface Drawing {
-  points?: [number, number][];
-  startX?: number;
-  startY?: number;
-  width?: number;
-  height?: number;
-  centerX?: number;
-  centerY?: number;
-  radius?: number;
-  color: string;
-}
 
 const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.strokeStyle = shape.color;
@@ -210,13 +195,15 @@ useEffect(() => {
 
   return (
     <div className="w-screen h-screen overflow-hidden">
-      <Controls
+      <div className="z-10">
+        <Controls
         onColorChange={setColor}
         currentColor={color}
         onShapeSelect={setSelectedShape}
         selectedShape={selectedShape}
         onClear={clearCanvas}
       />
+      </div>
       <canvas
         ref={canvasRef}
         width="2000"
