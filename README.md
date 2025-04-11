@@ -2,7 +2,7 @@
 
 A **real-time collaborative whiteboard** built with **Next.js, WebSockets, and Prisma**. This project allows multiple users to draw and interact on a shared canvas in real time, making it perfect for brainstorming, sketching, and online collaboration.
 
-![Project Demo](assets/sketch.gif)
+![Project Demo](https://res.cloudinary.com/dbghbvuhb/video/upload/v1744347121/sxafl0jua3fscb70f81b.mp4)
 
 ## 🚀 Features
 
