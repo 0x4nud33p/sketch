@@ -2,6 +2,7 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Video from "./VideoComponent";
 
 const Hero = () => {
   return (
@@ -32,11 +33,12 @@ const Hero = () => {
         </div>
         <div className="mt-16 glass-card rounded-lg p-1 animate-float">
         <div className="aspect-video rounded-lg bg-background/80 overflow-hidden">
-          <img
+          {/* <img
             src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbzQ5MnNubmRvdHg5aXBreHVtM2E1Z2c1dTEyMjE0MXl2c2tmMHptYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/704WKWDtTjQWIoW7uJ/giphy.gif" 
             alt="Project Demo"
             className="w-full h-full object-cover"
-          />
+          /> */}
+          <Video />
         </div>
       </div>
       </div>

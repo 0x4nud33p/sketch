@@ -1,3 +1,5 @@
+"use client";
+
 import { Pencil, Square, Circle, X } from 'lucide-react';
 import { ControlsProps, ShapeType } from './types';
 
