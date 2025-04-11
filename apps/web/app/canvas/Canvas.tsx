@@ -5,21 +5,31 @@ import { ShapeType } from "./types";
 import { Controls } from "./Controls";
 import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { Drawing, Point } from "./types"
-
+import { Drawing, Point } from "./types";
 
 const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.strokeStyle = shape.color;
-  ctx.beginPath();
 
   if (shape.points) {
-    //@ts-ignore
+    ctx.beginPath();
+    // @ts-ignore
     ctx.moveTo(shape.points[0][0], shape.points[0][1]);
     shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.stroke();
-  } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
+  } else if (
+    shape.startX !== undefined &&
+    shape.startY !== undefined &&
+    shape.width !== undefined &&
+    shape.height !== undefined
+  ) {
+    ctx.beginPath();
     ctx.strokeRect(shape.startX, shape.startY, shape.width, shape.height);
-  } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
+  } else if (
+    shape.centerX !== undefined &&
+    shape.centerY !== undefined &&
+    shape.radius !== undefined
+  ) {
+    ctx.beginPath();
     ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, Math.PI * 2);
     ctx.stroke();
   }
@@ -37,81 +47,89 @@ const Canvas = () => {
   const [circles, setCircles] = useState<Drawing[]>([]);
   const [rectangles, setRectangles] = useState<Drawing[]>([]);
   const [currentDrawing, setCurrentDrawing] = useState<Drawing | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const wsRef = useRef<WebSocket | null>(null);
 
-useEffect(() => {
-  const roomIdParam = searchParams?.get("roomid");
-  if (!roomIdParam) {
-    redirect("/join");
-    return;
-  }
-  setRoomId(roomIdParam);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-  const ws = new WebSocket("ws://localhost:8080");
-  wsRef.current = ws;
+    const handleResize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.scale(dpr, dpr);
+    };
 
-  ws.onopen = () => {
-    console.log("WebSocket connected");
-    ws.send(JSON.stringify({ type: "join_room", room: roomIdParam }));
-  };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
- ws.onmessage = (event) => {
-  try {
-    const data = JSON.parse(event.data);
+  useEffect(() => {
+    const roomIdParam = searchParams?.get("roomid");
+    if (!roomIdParam) {
+      redirect("/join");
+      return;
+    }
+    setRoomId(roomIdParam);
 
-    // Handle Initial Drawings
-    if (data.type === "initial_drawings") {
-      if (!Array.isArray(data.data)) {
-        console.error("Invalid initial_drawings data:", data.data);
-        return;
-      }
+    const ws = new WebSocket("ws://localhost:8080");
+    wsRef.current = ws;
 
-      const newLines: Drawing[] = [];
-      const newCircles: Drawing[] = [];
-      const newRectangles: Drawing[] = [];
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "join_room", room: roomIdParam }));
+    };
 
-      data.data.forEach((shape: Drawing) => {
-        if (shape.points) {
-          newLines.push({ points: shape.points, color: shape.color });
-        } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
-          newCircles.push({ centerX: shape.centerX, centerY: shape.centerY, radius: shape.radius, color: shape.color });
-        } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
-          newRectangles.push({ startX: shape.startX, startY: shape.startY, width: shape.width, height: shape.height, color: shape.color });
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "initial_drawings") {
+          if (!Array.isArray(data.data)) {
+            console.error("Invalid initial_drawings data:", data.data);
+            return;
+          }
+
+          const newLines: Drawing[] = [];
+          const newCircles: Drawing[] = [];
+          const newRectangles: Drawing[] = [];
+
+          data.data.forEach((shape: Drawing) => {
+            if (shape.points) {
+              newLines.push({ points: shape.points, color: shape.color });
+            } else if (shape.centerX !== undefined) {
+              newCircles.push({ ...shape });
+            } else if (shape.startX !== undefined) {
+              newRectangles.push({ ...shape });
+            }
+          });
+
+          setLines(newLines);
+          setCircles(newCircles);
+          setRectangles(newRectangles);
+        } else if (data.type === "drawing") {
+          const shape = data.drawingData;
+          if (!shape) {
+            console.error("Invalid drawing data:", data);
+            return;
+          }
+
+          if (shape.points) setLines((prev) => [...prev, shape]);
+          else if (shape.centerX !== undefined) setCircles((prev) => [...prev, shape]);
+          else if (shape.startX !== undefined) setRectangles((prev) => [...prev, shape]);
         }
-      });
-
-      setLines(newLines);
-      setCircles(newCircles);
-      setRectangles(newRectangles);
-    }
-
-    // Handle Real-Time Drawings 
-    if (data.type === "drawing") {
-      if (!data.drawingData) { 
-        console.error("Invalid drawing data:", data);
-        return;
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
       }
-      const shape = data.drawingData;
-        if (shape.points) {
-        setLines((prevLines) => [...prevLines, { points: shape.points, color: shape.color }]);
-      } else if (shape.centerX !== undefined && shape.centerY !== undefined && shape.radius !== undefined) {
-        setCircles((prevCircles) => [...prevCircles, { centerX: shape.centerX, centerY: shape.centerY, radius: shape.radius, color: shape.color }]);
-      } else if (shape.startX !== undefined && shape.startY !== undefined && shape.width !== undefined && shape.height !== undefined) {
-        setRectangles((prevRectangles) => [...prevRectangles, { startX: shape.startX, startY: shape.startY, width: shape.width, height: shape.height, color: shape.color }]);
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing WebSocket message:", error);
-  }
-};
-  ws.onclose = () => console.log("WebSocket disconnected");
-  ws.onerror = (error) => console.error("WebSocket error:", error);
+    };
 
-  return () => {
-    ws.close();
-  };
-}, [searchParams]);
-
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [searchParams]);
 
   const clearCanvas = async () => {
     try {
@@ -131,27 +149,45 @@ useEffect(() => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    ctx.save();
+    ctx.scale(zoomLevel, zoomLevel);
     [...lines, ...circles, ...rectangles, currentDrawing].forEach((shape) => {
       if (shape) drawShape(ctx, shape);
     });
-  }, [lines, circles, rectangles, currentDrawing]);
+    ctx.restore();
+  }, [lines, circles, rectangles, currentDrawing, zoomLevel]);
 
   useEffect(() => {
     requestAnimationFrame(redraw);
   }, [redraw]);
+
+  const getMousePosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / zoomLevel,
+      y: (e.clientY - rect.top) / zoomLevel,
+    };
+  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getMousePosition(e);
     setIsDrawing(true);
     setStartPoint({ x, y });
 
-    const newDrawing: Drawing = { color };
-    if (selectedShape === "pencil") newDrawing.points = [[x, y]];
-    if (selectedShape === "rectangle") Object.assign(newDrawing, { startX: x, startY: y, width: 0, height: 0 });
-    if (selectedShape === "circle") Object.assign(newDrawing, { centerX: x, centerY: y, radius: 0 });
-    
-    setCurrentDrawing(newDrawing);
+    if (selectedShape === "pencil") {
+      setCurrentDrawing({ color, points: [[x, y]] });
+    } else if (selectedShape === "rectangle") {
+      setCurrentDrawing({ color, startX: x, startY: y, width: 0, height: 0 });
+    } else if (selectedShape === "circle") {
+      setCurrentDrawing({ color, centerX: x, centerY: y, radius: 0 });
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -159,22 +195,28 @@ useEffect(() => {
     const { x, y } = getMousePosition(e);
 
     setCurrentDrawing((prev) => {
-      if (!prev) return prev;
-      if (selectedShape === "pencil") prev.points?.push([x, y]);
-      if (selectedShape === "rectangle") Object.assign(prev, { width: x - prev.startX!, height: y - prev.startY! });
-      if (selectedShape === "circle") prev.radius = Math.hypot(x - startPoint.x, y - startPoint.y);
-      return { ...prev };
+      if (!prev) return null;
+      if (selectedShape === "pencil") {
+        return { ...prev, points: [...(prev.points || []), [x, y]] };
+      }
+      if (selectedShape === "rectangle") {
+        return { ...prev, width: x - prev.startX!, height: y - prev.startY! };
+      }
+      if (selectedShape === "circle") {
+        return { ...prev, radius: Math.hypot(x - startPoint.x, y - startPoint.y) };
+      }
+      return prev;
     });
   };
 
   const handleMouseUp = () => {
     if (!startPoint || !currentDrawing) return;
-    
+
     if (selectedShape === "pencil") setLines([...lines, currentDrawing]);
     if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
 
-    if (wsRef.current && currentDrawing) {
+    if (wsRef.current) {
       wsRef.current.send(
         JSON.stringify({
           type: "drawing",
@@ -183,36 +225,46 @@ useEffect(() => {
         })
       );
     }
+
     setIsDrawing(false);
     setStartPoint(null);
     setCurrentDrawing(null);
   };
 
-  const getMousePosition = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    return { x: e.clientX - rect!.left, y: e.clientY - rect!.top };
-  };
-
   return (
-    <div className="w-screen h-screen overflow-hidden">
+    <div className="w-screen h-screen overflow-hidden relative">
       <div className="z-10">
         <Controls
-        onColorChange={setColor}
-        currentColor={color}
-        onShapeSelect={setSelectedShape}
-        selectedShape={selectedShape}
-        onClear={clearCanvas}
-      />
+          onColorChange={setColor}
+          currentColor={color}
+          onShapeSelect={setSelectedShape}
+          selectedShape={selectedShape}
+          onClear={clearCanvas}
+        />
       </div>
+
       <canvas
         ref={canvasRef}
-        width="2000"
-        height="1000"
-        className="bg-[#18181b]"
+        className="bg-[#18181b] top-0 left-0 w-full h-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       />
+
+      <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
+        <button
+          onClick={() => setZoomLevel((prev) => Math.min(prev + 0.1, 3))}
+          className="w-10 h-10 bg-blue-500 text-white text-xl rounded-full flex items-center justify-center shadow"
+        >
+          +
+        </button>
+        <button
+          onClick={() => setZoomLevel((prev) => Math.max(prev - 0.1, 0.5))}
+          className="w-10 h-10 bg-blue-500 text-white text-xl rounded-full flex items-center justify-center shadow"
+        >
+          -
+        </button>
+      </div>
     </div>
   );
 };
