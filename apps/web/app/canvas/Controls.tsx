@@ -31,12 +31,12 @@ export const Controls: React.FC<ControlsProps> = ({
         </button>
       ))}
       <label
-        className="w-12 h-12 rounded-lg border-2 border-[#fef08a] cursor-pointer transition-all duration-300 hover:scale-110"
+        className="relative w-12 h-12 rounded-lg border-2 border-[#fef08a] cursor-pointer transition-all duration-300 hover:scale-110"
         style={{ backgroundColor: currentColor }}
       >
         <input
           type="color"
-          className="hidden"
+          className="absolute opacity-0 w-full h-full"
           value={currentColor}
           onChange={(e) => onColorChange(e.target.value)}
         />
