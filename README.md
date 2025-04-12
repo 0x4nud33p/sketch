@@ -18,7 +18,7 @@ A **real-time collaborative whiteboard** built with **Next.js, WebSockets, and P
 ## 📂 Project Structure
 
 ```
-└── anudeep009-excalidraw-clone.git/
+└── 0x4nud3p-excalidraw-clone.git/
     ├── apps/
     │   ├── web/               # Next.js frontend
     │   └── ws-backend/        # WebSocket backend
