@@ -117,8 +117,10 @@ const Canvas = () => {
           }
 
           if (shape.points) setLines((prev) => [...prev, shape]);
-          else if (shape.centerX !== undefined) setCircles((prev) => [...prev, shape]);
-          else if (shape.startX !== undefined) setRectangles((prev) => [...prev, shape]);
+          else if (shape.centerX !== undefined)
+            setCircles((prev) => [...prev, shape]);
+          else if (shape.startX !== undefined)
+            setRectangles((prev) => [...prev, shape]);
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
@@ -203,7 +205,10 @@ const Canvas = () => {
         return { ...prev, width: x - prev.startX!, height: y - prev.startY! };
       }
       if (selectedShape === "circle") {
-        return { ...prev, radius: Math.hypot(x - startPoint.x, y - startPoint.y) };
+        return {
+          ...prev,
+          radius: Math.hypot(x - startPoint.x, y - startPoint.y),
+        };
       }
       return prev;
     });
@@ -213,7 +218,8 @@ const Canvas = () => {
     if (!startPoint || !currentDrawing) return;
 
     if (selectedShape === "pencil") setLines([...lines, currentDrawing]);
-    if (selectedShape === "rectangle") setRectangles([...rectangles, currentDrawing]);
+    if (selectedShape === "rectangle")
+      setRectangles([...rectangles, currentDrawing]);
     if (selectedShape === "circle") setCircles([...circles, currentDrawing]);
 
     if (wsRef.current) {
@@ -233,7 +239,7 @@ const Canvas = () => {
 
   return (
     <div className="w-screen h-screen overflow-hidden relative">
-      <div className="z-10">
+      <div className="border-yellow-300">
         <Controls
           onColorChange={setColor}
           currentColor={color}

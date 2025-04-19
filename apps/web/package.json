@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@better-fetch/fetch": "^1.1.12",
-    "@repo/db": "workspace:*",
     "@prisma/client": "6.3.1",
+    "@radix-ui/react-tooltip": "^1.2.3",
+    "@repo/db": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tailwindcss/postcss": "^4.0.6",
     "@types/axios": "^0.14.4",
@@ -32,9 +35,7 @@
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "^4.0.6",
-    "tailwindcss-animate": "^1.0.7",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
