@@ -1,11 +1,9 @@
-import Canvas from "./Canvas"
+"use client";
 
-const page = () => {
-  return (
-    <>
-    <Canvas />
-    </>
-  )
-}
+import Canvas from "./Canvas";
 
-export default page
+const DrawingPage: React.FC = () => {
+  return <Canvas />;
+};
+
+export default DrawingPage;

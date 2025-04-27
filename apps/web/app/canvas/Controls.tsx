@@ -1,15 +1,18 @@
+// Controls.tsx - Enhanced UI component
 "use client";
 
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Pencil, Square, Circle, X } from "lucide-react";
 import { ControlsProps, ShapeType } from "./types";
 
-const IconButtonWithTooltip = ({
-  label,
-  children,
-}: {
+interface IconButtonWithTooltipProps {
   label: string;
   children: React.ReactNode;
+}
+
+const IconButtonWithTooltip: React.FC<IconButtonWithTooltipProps> = ({
+  label,
+  children,
 }) => (
   <Tooltip.Provider delayDuration={100}>
     <Tooltip.Root>
@@ -35,13 +38,15 @@ export const Controls: React.FC<ControlsProps> = ({
   onColorChange,
   currentColor,
 }) => {
+  const tools = [
+    { shape: "pencil" as ShapeType, Icon: Pencil, label: "Pencil" },
+    { shape: "rectangle" as ShapeType, Icon: Square, label: "Rectangle" },
+    { shape: "circle" as ShapeType, Icon: Circle, label: "Circle" },
+  ];
+
   return (
     <div className="bg-[#18181b] flex justify-center items-center gap-4 p-4 z-10">
-      {[
-        { shape: "pencil", Icon: Pencil, label: "Pencil" },
-        { shape: "rectangle", Icon: Square, label: "Rectangle" },
-        { shape: "circle", Icon: Circle, label: "Circle" },
-      ].map(({ shape, Icon, label }) => (
+      {tools.map(({ shape, Icon, label }) => (
         <IconButtonWithTooltip key={shape} label={label}>
           <button
             className={`w-12 h-12 flex justify-center items-center rounded-lg border-2 transition-all duration-300 hover:scale-110
@@ -50,7 +55,9 @@ export const Controls: React.FC<ControlsProps> = ({
                 ? "bg-[#fef08a] text-black border-[#fef08a]"
                 : "bg-transparent text-[#fef08a] border-[#fef08a]"
             }`}
-            onClick={() => onShapeSelect(shape as ShapeType)}
+            onClick={() => onShapeSelect(shape)}
+            aria-label={label}
+            aria-pressed={selectedShape === shape}
           >
             <Icon
               size={24}
@@ -70,6 +77,7 @@ export const Controls: React.FC<ControlsProps> = ({
             className="absolute opacity-0 w-full h-full"
             value={currentColor}
             onChange={(e) => onColorChange(e.target.value)}
+            aria-label="Select Color"
           />
         </label>
       </IconButtonWithTooltip>
@@ -78,6 +86,7 @@ export const Controls: React.FC<ControlsProps> = ({
         <button
           className="w-12 h-12 flex justify-center items-center rounded-lg border-2 border-[#f87171] text-[#f87171] transition-all duration-300 hover:scale-110 hover:bg-[#f87171] hover:text-black"
           onClick={onClear}
+          aria-label="Clear Canvas"
         >
           <X size={24} color="currentColor" />
         </button>

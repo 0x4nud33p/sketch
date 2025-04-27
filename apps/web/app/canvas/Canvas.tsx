@@ -6,6 +6,7 @@ import { Controls } from "./Controls";
 import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Drawing, Point } from "./types";
+import { DrawingRenderer } from "./types";
 
 const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.strokeStyle = shape.color;

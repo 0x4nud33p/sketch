@@ -6,7 +6,7 @@ import ToastProvider from "./providers/ToastProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
+  display: "swap",
 });
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
