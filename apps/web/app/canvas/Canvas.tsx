@@ -11,30 +11,27 @@ import { DrawingRenderer } from "./types";
 const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
   ctx.strokeStyle = shape.color;
 
-  if (shape.points) {
+  if (shape.type === "pencil") {
     ctx.beginPath();
-    // @ts-ignore
-    ctx.moveTo(shape.points[0][0], shape.points[0][1]);
+    const [firstX, firstY] = shape.points[0];
+    ctx.moveTo(firstX, firstY);
     shape.points.forEach(([x, y]) => ctx.lineTo(x, y));
     ctx.stroke();
-  } else if (
-    shape.startX !== undefined &&
-    shape.startY !== undefined &&
-    shape.width !== undefined &&
-    shape.height !== undefined
-  ) {
+  } else if (shape.type === "rectangle") {
     ctx.beginPath();
-    ctx.strokeRect(shape.startX, shape.startY, shape.width, shape.height);
-  } else if (
-    shape.centerX !== undefined &&
-    shape.centerY !== undefined &&
-    shape.radius !== undefined
-  ) {
+    ctx.strokeRect(
+      shape.startPoint.x,
+      shape.startPoint.y,
+      shape.width,
+      shape.height
+    );
+  } else if (shape.type === "circle") {
     ctx.beginPath();
-    ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, Math.PI * 2);
+    ctx.arc(shape.center.x, shape.center.y, shape.radius, 0, Math.PI * 2);
     ctx.stroke();
   }
 };
+
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,8 +53,8 @@ const Canvas = () => {
     if (!canvas) return;
 
     const handleResize = () => {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect(); // The Element.getBoundingClientRect() method returns a DOMRect object providing information about the size of an element and its position relative to the viewport.
+      const dpr = window.devicePixelRatio || 1; // The devicePixelRatio of Window interface returns the ratio of the resolution in physical pixels to the resolution in CSS pixels for the current display device.
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       const ctx = canvas.getContext("2d");
@@ -73,7 +70,6 @@ const Canvas = () => {
     const roomIdParam = searchParams?.get("roomid");
     if (!roomIdParam) {
       redirect("/join");
-      return;
     }
     setRoomId(roomIdParam);
 
@@ -185,12 +181,19 @@ const Canvas = () => {
     setStartPoint({ x, y });
 
     if (selectedShape === "pencil") {
-      setCurrentDrawing({ color, points: [[x, y]] });
+      setCurrentDrawing({ type: "pencil", color, points: [[x, y]] });
     } else if (selectedShape === "rectangle") {
-      setCurrentDrawing({ color, startX: x, startY: y, width: 0, height: 0 });
+      setCurrentDrawing({
+        type: "rectangle",
+        color,
+        startPoint: { x, y },
+        width: 0,
+        height: 0,
+      });
     } else if (selectedShape === "circle") {
-      setCurrentDrawing({ color, centerX: x, centerY: y, radius: 0 });
+      setCurrentDrawing({ type: "circle", color, center: { x, y }, radius: 0 });
     }
+    
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -203,14 +206,18 @@ const Canvas = () => {
         return { ...prev, points: [...(prev.points || []), [x, y]] };
       }
       if (selectedShape === "rectangle") {
-        return { ...prev, width: x - prev.startX!, height: y - prev.startY! };
+        return {
+          ...prev,
+          width: x - prev.startPoint.x,
+          height: y - prev.startPoint.y,
+        };
       }
       if (selectedShape === "circle") {
         return {
           ...prev,
-          radius: Math.hypot(x - startPoint.x, y - startPoint.y),
+          radius: Math.hypot(x - prev.center.x, y - prev.center.y),
         };
-      }
+      }      
       return prev;
     });
   };
