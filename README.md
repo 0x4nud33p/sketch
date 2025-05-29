@@ -173,31 +173,6 @@ This project uses:
 - **ESLint** for code linting
 - **Prettier** for code formatting
 - **TypeScript** for type checking
-- **Husky** for git hooks (if configured)
-
-## 🚢 Deployment
-
-### Web Application (Vercel)
-
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-### WebSocket Server
-
-Deploy to any Node.js hosting platform:
-- Railway
-- Render
-- DigitalOcean App Platform
-- AWS Elastic Beanstalk
-
-### Database
-
-Use a managed PostgreSQL service:
-- Vercel Postgres
-- Supabase
-- PlanetScale
-- AWS RDS
 
 ## 🤝 Contributing
 
@@ -210,10 +185,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 3. Make your changes and commit: `git commit -m 'Add amazing feature'`
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
