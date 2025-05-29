@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
-import { Server, WebSocket } from "ws";
 import dotenv from "dotenv";
 import prisma from "@repo/db/client";
+import WebSocket, { WebSocketServer } from 'ws';
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const server = app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
 
-const wss = new Server({ server });
+const wss = new WebSocketServer({ server });
 
 interface Drawing {
   points?: [number, number][];
