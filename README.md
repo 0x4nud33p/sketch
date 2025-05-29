@@ -1,146 +1,238 @@
-# 🖌 Sketch (Excalidraw Clone)
+# Sketch - Real-time Collaborative Whiteboard
 
-A **real-time collaborative whiteboard** built with **Next.js, WebSockets, and Prisma**. This project allows multiple users to draw and interact on a shared canvas in real time, making it perfect for brainstorming, sketching, and online collaboration.
+> A modern, real-time collaborative whiteboard application built with Next.js, WebSockets, and Prisma
 
-![Project Demo](https://res.cloudinary.com/dbghbvuhb/video/upload/v1744347121/sxafl0jua3fscb70f81b.mp4)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white)](https://www.prisma.io/)
 
-## 🚀 Features
+## ✨ Features
 
-- 🎨 **Real-time drawing** with WebSockets
-- 👥 **Collaborative rooms** for multiple users
-- 🔐 **Authentication** (Sign In / Sign Up)
-- 🖥 **Responsive UI** built with Tailwind CSS
-- 💾 **Database integration** using Prisma and PostgreSQL
-- 📂 **Modular TurboRepo architecture**
+- **🎨 Real-time Collaborative Drawing** - Multiple users can draw simultaneously with instant synchronization
+- **🏠 Room-based Sessions** - Create and join dedicated collaboration spaces
+- **🔐 Secure Authentication** - Google OAuth integration with session management
+- **📱 Responsive Design** - Optimized for desktop, tablet, and mobile devices
+- **🚀 High Performance** - Built with modern web technologies for optimal speed
+- **🎯 Intuitive Interface** - Clean, user-friendly design inspired by industry standards
 
----
+## 🛠️ Tech Stack
 
-## 📂 Project Structure
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **WebSocket Client** - Real-time communication
 
-```
-└── 0x4nud3p-excalidraw-clone.git/
-    ├── apps/
-    │   ├── web/               # Next.js frontend
-    │   └── ws-backend/        # WebSocket backend
-    ├── packages/
-    │   ├── db/                # Prisma database schema
-    │   ├── eslint-config/     # Shared ESLint config
-    │   ├── typescript-config/ # Shared TypeScript config
-    │   └── ui/                # Reusable UI components
-    ├── turbo.json             # TurboRepo configuration
-    └── README.md              # Project documentation
-```
-
----
-
-## 🏗 Tech Stack
-
-### **Frontend (Web App)**
-- **Next.js** - Server-side rendering & static site generation
-- **React** - Component-based UI
-- **Tailwind CSS** - Modern utility-first styling
-- **TypeScript** - Strongly typed JavaScript
-- **WebSockets** - Real-time collaboration
-
-### **Backend (WebSocket Server)**
+### Backend
 - **Node.js** - JavaScript runtime
-- **Express.js** - Lightweight server framework
-- **WebSockets (ws)** - Live communication between users
+- **WebSocket Server** - Live collaboration engine
+- **Better Auth** - Modern authentication solution
 
-### **Database & Auth**
-- **Prisma** - ORM for PostgreSQL
-- **PostgreSQL** - Scalable relational database
-- **better-auth** - Authentication
+### Database & Infrastructure
+- **Prisma ORM** - Type-safe database client
+- **PostgreSQL** - Robust relational database
+- **Turborepo** - High-performance build system
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ 
+- pnpm (recommended) or npm
+- PostgreSQL database
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/0x4nud33p/sketch.git
+   cd sketch
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
+
+3. **Environment setup**
+   
+   Copy the example environment files and configure them:
+   ```bash
+   # Web application
+   cp apps/web/.env.example apps/web/.env.local
+   
+   # WebSocket backend
+   cp apps/ws-backend/.env.example apps/ws-backend/.env
+   
+   # Database
+   cp packages/db/.env.example packages/db/.env
+   ```
+
+4. **Configure environment variables**
+
+   **`apps/web/.env.local`**
+   ```env
+   NEXT_WS_URL=ws://localhost:8080
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   BETTER_AUTH_SECRET=your_secure_random_string
+   BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+   **`packages/db/.env`**
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/sketch_db"
+   ```
+
+5. **Database setup**
+   ```bash
+   pnpm db:push
+   ```
+
+6. **Start development servers**
+   ```bash
+   # Terminal 1 - Start the web application
+   pnpm dev:web
+   
+   # Terminal 2 - Start the WebSocket server
+   pnpm dev:ws
+   ```
+
+7. **Open your browser**
+   
+   Navigate to `http://localhost:3000` to start collaborating!
+
+## 📁 Project Architecture
+
+```
+sketch/
+├── apps/
+│   ├── web/                    # Next.js frontend application
+│   │   ├── app/               # App Router pages and layouts
+│   │   ├── components/        # Reusable React components
+│   │   ├── hooks/             # Custom React hooks
+│   │   └── lib/               # Utility functions and configs
+│   └── ws-backend/            # WebSocket server
+│       └── src/               # Server implementation
+├── packages/
+│   ├── db/                    # Prisma database schema and client
+│   ├── eslint-config/         # Shared ESLint configurations
+│   ├── typescript-config/     # Shared TypeScript configurations
+│   └── ui/                    # Shared UI component library
+└── turbo.json                 # Turborepo configuration
+```
+
+## 🔌 API Reference
+
+### Authentication Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/signin` | User authentication |
+| `GET` | `/api/auth/session` | Get current session |
+
+### Application Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/drawings` | Retrieve saved drawings |
+| `POST` | `/api/drawings` | Save drawing data |
+| `GET` | `/api/rooms` | List available rooms |
+| `POST` | `/api/rooms` | Create new collaboration room |
+
+## 🧪 Development
+
+### Available Scripts
+
+```bash
+# Development
+pnpm dev:web          # Start web application
+pnpm dev:ws           # Start WebSocket server
+pnpm dev              # Start all services
+
+# Database
+pnpm db:push          # Push schema changes
+pnpm db:studio        # Open Prisma Studio
+pnpm db:generate      # Generate Prisma client
+
+# Building
+pnpm build            # Build all packages
+pnpm build:web        # Build web application only
+
+# Linting & Formatting
+pnpm lint             # Run ESLint
+pnpm lint:fix         # Fix ESLint issues
+pnpm type-check       # Run TypeScript checks
+```
+
+### Code Style
+
+This project uses:
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **TypeScript** for type checking
+- **Husky** for git hooks (if configured)
+
+## 🚢 Deployment
+
+### Web Application (Vercel)
+
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### WebSocket Server
+
+Deploy to any Node.js hosting platform:
+- Railway
+- Render
+- DigitalOcean App Platform
+- AWS Elastic Beanstalk
+
+### Database
+
+Use a managed PostgreSQL service:
+- Vercel Postgres
+- Supabase
+- PlanetScale
+- AWS RDS
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and commit: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by [Excalidraw](https://excalidraw.com/) for the collaborative drawing experience
+- Built with modern web technologies and best practices
+- Special thanks to the open-source community
+
+## 📞 Support
+
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/0x4nud33p/sketch/issues)
+- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/0x4nud33p/sketch/discussions)
+- 📧 **Contact**: [anudeepavula009@example.com](mailto:anudeepavula009@example.com)
 
 ---
 
-## 🔧 Installation & Setup
+<div align="center">
 
-### 1️⃣ Clone the Repository
-```sh
-git clone https://github.com/0x4nud33p/sketch.git
-cd sketch
-```
+**[🌟 Star this repo](https://github.com/0x4nud33p/sketch)** • **[🍴 Fork it](https://github.com/0x4nud33p/sketch/fork)** • **[📱 Try the demo](https://your-demo-url.vercel.app)**
 
-### 2️⃣ Install Dependencies
-```sh
-pnpm install
-```
+Made with ❤️ by [Anudeep Avula](https://github.com/0x4nud33p)
 
-### 3️⃣ Setup Environment Variables
-Create a `.env` file in the **root directory** and add the following:
-```
-# apps/web
-NEXT_WS_URL=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=
-
-# apps/ws-backend
-PORT=
-
-# packages/db
-DATABASE_URL=
-
-```
-
-### 4️⃣ Run Database Migrations
-```sh
-pnpm db:migrate
-```
-
-### 5️⃣ Start Development Server
-#### Start the **frontend** (Next.js web app):
-```sh
-pnpm dev:web
-```
-#### Start the **backend** (WebSocket server):
-```sh
-pnpm dev:ws
-```
-
-The app should now be running at `http://localhost:3000` 🎉
-
----
-
-## 📜 API Routes
-
-### **Auth Routes**
-| Method | Endpoint            | Description      |
-|--------|---------------------|-----------------|
-| `POST` | `/api/auth/signin`  | Log in a user   |
-
-### **Canvas & Collaboration**
-| Method | Endpoint               | Description |
-|--------|------------------------|-------------|
-| `GET`  | `/api/drawings`        | Fetch all drawings |
-| `POST` | `/api/drawings`        | Save a new drawing |
-| `GET`  | `/api/rooms`           | Get available rooms |
-| `POST` | `/api/rooms`           | Create a new room |
-
----
-
-## 🛠 Future Enhancements
-- 🏷 **User roles & permissions**
-- 🗃 **Cloud storage for drawings**
-- 🎥 **Live voice/video collaboration**
-
----
-
-## 👥 Contributing
-Pull requests are welcome! If you'd like to contribute:
-1. Fork the repo
-2. Create a new branch (`git checkout -b feature-branch`)
-3. Make your changes & commit (`git commit -m 'Add new feature'`)
-4. Push to the branch (`git push origin feature-branch`)
-5. Submit a pull request
-
----
-
-## 📜 License
-This project is **open-source** and licensed under the **MIT License**.
-
----
-
-🚀 **Made with ❤️ by [Anudeep Avula](https://github.com/0x4nud33p)**
+</div>
