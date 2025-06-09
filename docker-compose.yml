@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: sketch
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      - db
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgres://user:pass@db:5432/sketch
+    volumes:
+      - .:/app
+    command: pnpm --filter web dev
+
+  ws-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.ws
+    depends_on:
+      - db
+    ports:
+      - '4000:4000'
+    environment:
+      DATABASE_URL: postgres://user:pass@db:5432/sketch
+    volumes:
+      - .:/app
+    command: pnpm --filter ws-backend dev
+
+volumes:
+  pgdata:
