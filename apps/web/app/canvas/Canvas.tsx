@@ -381,15 +381,15 @@ const Canvas = () => {
         <div
           className={`px-3 py-1 rounded-full text-sm font-medium ${
             connectionStatus === "connected"
-              ? "bg-green-100 text-green-800"
+              ? "text-green-800"
               : connectionStatus === "connecting"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-red-100 text-red-800"
+                ? "text-yellow-800"
+                : "text-red-800"
           }`}
         >
-          {connectionStatus === "connected" && "🟢 Connected"}
-          {connectionStatus === "connecting" && "🟡 Connecting..."}
-          {connectionStatus === "disconnected" && "🔴 Disconnected"}
+          {connectionStatus === "connected" && " Connected"}
+          {connectionStatus === "connecting" && " Connecting..."}
+          {connectionStatus === "disconnected" && " Disconnected"}
         </div>
       </div>
 

@@ -6,15 +6,12 @@ import { Button } from "@repo/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
-
-interface Room {
-  id: string;
-  name: string;
-  createdAt: string;
-}
+import { Room, RoomCardProps, RoomCreationPopupProps } from "./types";
+import RoomCard from "utils/RoomCard";
 
 export default function JoinRoomPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showPopup, setShowPopup] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const router = useRouter();
@@ -22,12 +19,17 @@ export default function JoinRoomPage() {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
+        setIsLoading(true);
         const { data } = await axios.get<{ rooms: Room[] }>("/api/rooms");
         setRooms(data.rooms);
       } catch (error) {
-        toast.error("Failed to fetch rooms.");
+        console.error("Error fetching rooms:", error);
+        toast.error("Failed to fetch rooms. Please try again later.");
+      } finally {
+        setIsLoading(false);
       }
     };
+
     fetchRooms();
   }, []);
 
@@ -48,49 +50,77 @@ export default function JoinRoomPage() {
         body: JSON.stringify({ roomName: newRoomName }),
       });
 
-      if (!response.ok) throw new Error("Failed to create room");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const { id }: { id: string } = await response.json();
-      setRooms([...rooms, { id, name: newRoomName, createdAt: new Date().toISOString() }]);
-      toast.success("Room created successfully.");
+      setRooms((prevRooms) => [
+        ...prevRooms,
+        {
+          id,
+          name: newRoomName,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      toast.success("Room created successfully!");
       setShowPopup(false);
       setNewRoomName("");
     } catch (error) {
-      toast.error("Failed to create room.");
+      console.error("Error creating room:", error);
+      toast.error("Failed to create room. Please try again.");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#18181b] text-white">
-      <Card className="w-[95%] md:w-[50vw] p-5 bg-[#27272a]">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">Available Rooms</CardTitle>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-900 text-white p-4">
+      <Card className="w-full max-w-4xl bg-zinc-800 border-zinc-700">
+        <CardHeader className="border-b border-zinc-700">
+          <CardTitle className="text-2xl font-bold text-center">
+            Available Rooms
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rooms.map((room) => (
-            <RoomCard key={room.id} room={room} onJoin={handleJoinRoom} />
-          ))}
+
+        <CardContent className="p-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
+            </div>
+          ) : rooms.length === 0 ? (
+            <div className="text-center py-8 text-zinc-400">
+              No rooms available. Create your first room!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {rooms.map((room) => (
+                <RoomCard key={room.id} room={room} onJoin={handleJoinRoom} />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-8 flex justify-center">
+            <Button
+              className="bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-medium px-6 py-3 rounded-lg transition-colors"
+              onClick={() => setShowPopup(true)}
+            >
+              Create New Room
+            </Button>
+          </div>
         </CardContent>
-        <div className="mt-6 flex justify-center">
-          <Button className="bg-[#fef08a] text-black px-6 py-3 rounded-lg" onClick={() => setShowPopup(true)}>
-            Create Room
-          </Button>
-        </div>
       </Card>
 
-      {showPopup && <RoomCreationPopup onCreate={handleCreateRoom} onCancel={() => setShowPopup(false)} newRoomName={newRoomName} setNewRoomName={setNewRoomName} />}
+      {showPopup && (
+        <RoomCreationPopup
+          onCreate={handleCreateRoom}
+          onCancel={() => {
+            setShowPopup(false);
+            setNewRoomName("");
+          }}
+          newRoomName={newRoomName}
+          setNewRoomName={setNewRoomName}
+        />
+      )}
     </div>
-  );
-}
-
-function RoomCard({ room, onJoin }: { room: Room; onJoin: (roomId: string) => void }) {
-  return (
-    <Card className="bg-[#3b3b40] text-white p-4 rounded-lg cursor-pointer hover:shadow-lg hover:bg-[#323236]" onClick={() => onJoin(room.id)}>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">{room.name}</CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-gray-400">Created on {new Date(room.createdAt).toLocaleDateString()}</CardContent>
-    </Card>
   );
 }
 
@@ -99,32 +129,42 @@ function RoomCreationPopup({
   onCancel,
   newRoomName,
   setNewRoomName,
-}: {
-  onCreate: () => void;
-  onCancel: () => void;
-  newRoomName: string;
-  setNewRoomName: (value: string) => void;
-}) {
+}: RoomCreationPopupProps) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <Card className="w-[90%] md:w-[30vw] bg-[#27272a] p-5">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+      <Card className="w-full max-w-md bg-zinc-800 border-zinc-700">
         <CardHeader>
-          <CardTitle className="text-center">Create a Room</CardTitle>
+          <CardTitle className="text-xl font-bold text-center">
+            Create New Room
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+
+        <CardContent className="space-y-4 p-6">
           <input
             type="text"
             placeholder="Enter Room Name"
             value={newRoomName}
             onChange={(e) => setNewRoomName(e.target.value)}
-            className="w-full p-2 rounded-lg bg-[#3f3f46] text-white border border-gray-600"
+            className="w-full p-3 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            autoFocus
+            onKeyDown={(e) => e.key === "Enter" && onCreate()}
           />
-          <Button className="w-full bg-[#fef08a] text-black px-4 py-2 rounded-lg" onClick={onCreate}>
-            Create
-          </Button>
-          <Button className="w-full bg-gray-500 text-white px-4 py-2 rounded-lg" onClick={onCancel}>
-            Cancel
-          </Button>
+
+          <div className="flex gap-3">
+            <Button
+              className="flex-1 bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-medium"
+              onClick={onCreate}
+              disabled={!newRoomName.trim()}
+            >
+              Create
+            </Button>
+            <Button
+              className="flex-1 bg-zinc-600 hover:bg-zinc-500 text-white font-medium"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

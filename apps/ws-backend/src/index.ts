@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import prisma from "@repo/db/client";
 import WebSocket, { WebSocketServer } from 'ws';
 import { createServer } from 'http';
+import { Drawing, WebSocketWithRoom, RoomData } from "./types";
 
 dotenv.config();
 
@@ -18,33 +19,6 @@ const wss = new WebSocketServer({
   perMessageDeflate: false // Disable compression for better performance
 });
 
-// Enhanced Drawing interface
-interface Drawing {
-  type: 'pencil' | 'rectangle' | 'circle';
-  points?: [number, number][];
-  startPoint?: { x: number; y: number };
-  width?: number;
-  height?: number;
-  center?: { x: number; y: number };
-  radius?: number;
-  color: string;
-  size?: number;
-  timestamp?: number;
-  id?: string;
-  [key: string]: any;
-}
-
-interface WebSocketWithRoom extends WebSocket {
-  room?: string;
-  id: string;
-  lastPing?: number;
-}
-
-interface RoomData {
-  clients: Set<WebSocketWithRoom>;
-  drawings: Drawing[];
-  lastActivity: number;
-}
 
 const rooms: Record<string, RoomData> = {};
 
@@ -71,7 +45,7 @@ async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
       where: { roomId },
       orderBy: { createdAt: "asc" },
     });
-    
+    console.log("get drawings from db",drawings);
     return drawings.map((d) => ({
       id: d.id,
       type: d.type as Drawing['type'],
@@ -295,6 +269,7 @@ wss.on("connection", (ws: WebSocketWithRoom) => {
     }
   });
 
+  // @ts-ignore
   ws.on("close", (code, reason) => {
     console.log(`WebSocket connection closed: ${ws.id}, code: ${code}, reason: ${reason.toString()}`);
     
@@ -322,7 +297,7 @@ wss.on("connection", (ws: WebSocketWithRoom) => {
       }
     }
   });
-
+  // @ts-ignore
   ws.on("error", (error) => {
     console.error(`WebSocket error for client ${ws.id}:`, error);
   });
@@ -336,6 +311,7 @@ wss.on("connection", (ws: WebSocketWithRoom) => {
     }
   }, 30000);
 
+  // @ts-ignore
   ws.on("pong", () => {
     ws.lastPing = Date.now();
   });
