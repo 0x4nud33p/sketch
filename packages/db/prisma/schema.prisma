@@ -32,6 +32,7 @@ model Drawing {
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   color     String
   size      Float
+  type      String
   createdAt DateTime @default(now())
   points    Json?    
   startX    Float?   

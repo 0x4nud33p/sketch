@@ -2,61 +2,92 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import prisma from "@repo/db/client";
 import WebSocket, { WebSocketServer } from 'ws';
+import { createServer } from 'http';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+// Create HTTP server
+const server = createServer(app);
+
+// Create WebSocket server
+const wss = new WebSocketServer({ 
+  server,
+  perMessageDeflate: false // Disable compression for better performance
 });
 
-const wss = new WebSocketServer({ server });
-
+// Enhanced Drawing interface
 interface Drawing {
+  type: 'pencil' | 'rectangle' | 'circle';
   points?: [number, number][];
-  startX?: number;
-  startY?: number;
+  startPoint?: { x: number; y: number };
   width?: number;
   height?: number;
-  centerX?: number;
-  centerY?: number;
+  center?: { x: number; y: number };
   radius?: number;
   color: string;
   size?: number;
+  timestamp?: number;
+  id?: string;
   [key: string]: any;
 }
 
 interface WebSocketWithRoom extends WebSocket {
   room?: string;
+  id: string;
+  lastPing?: number;
 }
 
 interface RoomData {
   clients: Set<WebSocketWithRoom>;
   drawings: Drawing[];
+  lastActivity: number;
 }
 
 const rooms: Record<string, RoomData> = {};
 
-// get initial drawings from the database handler
+// Utility functions
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+const cleanupInactiveRooms = () => {
+  const now = Date.now();
+  const ROOM_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+  Object.keys(rooms).forEach(roomId => {
+    const room = rooms[roomId];
+    if (room!.clients.size === 0 && (now - room!.lastActivity) > ROOM_TIMEOUT) {
+      console.log(`Cleaning up inactive room: ${roomId}`);
+      delete rooms[roomId];
+    }
+  });
+};
+
+// Enhanced database functions
 async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
   try {
     const drawings = await prisma.drawing.findMany({
       where: { roomId },
       orderBy: { createdAt: "asc" },
     });
+    
     return drawings.map((d) => ({
-      ...d,
+      id: d.id,
+      type: d.type as Drawing['type'],
       points: d.points as [number, number][] || undefined,
-      startX: d.startX ?? undefined,
-      startY: d.startY ?? undefined,
+      startPoint: d.startX !== null && d.startY !== null 
+        ? { x: d.startX, y: d.startY } 
+        : undefined,
       width: d.width ?? undefined,
       height: d.height ?? undefined,
-      centerX: d.centerX ?? undefined,
-      centerY: d.centerY ?? undefined,
+      center: d.centerX !== null && d.centerY !== null 
+        ? { x: d.centerX, y: d.centerY } 
+        : undefined,
       radius: d.radius ?? undefined,
-      size: d.size || 10
+      color: d.color,
+      size: d.size || 2,
+      timestamp: d.createdAt.getTime()
     }));
   } catch (error) {
     console.error("Error fetching drawings:", error);
@@ -64,106 +95,331 @@ async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
   }
 }
 
-async function storeDrawingsToDb(roomId: string, drawings: Drawing[]): Promise<void> {
+async function storeDrawingToDb(roomId: string, drawing: Drawing): Promise<void> {
   try {
-    const formattedDrawings = drawings.map(drawing => ({
-      roomId,
-      points: drawing.points || undefined,
-      startX: drawing.startX ?? undefined,
-      startY: drawing.startY ?? undefined,
-      width: drawing.width ?? undefined,
-      height: drawing.height ?? undefined,
-      centerX: drawing.centerX ?? undefined,
-      centerY: drawing.centerY ?? undefined,
-      radius: drawing.radius ?? undefined,
-      color: drawing.color,
-      size: drawing.size ?? 10,
-    }));
-    await prisma.drawing.createMany({
-      data: formattedDrawings,
-      skipDuplicates: true,
+    await prisma.drawing.create({
+      data: {
+        roomId,
+        type: drawing.type,
+        points: drawing.points || undefined,
+        startX: drawing.startPoint?.x ?? null,
+        startY: drawing.startPoint?.y ?? null,
+        width: drawing.width ?? null,
+        height: drawing.height ?? null,
+        centerX: drawing.center?.x ?? null,
+        centerY: drawing.center?.y ?? null,
+        radius: drawing.radius ?? null,
+        color: drawing.color,
+        size: drawing.size ?? 2,
+      }
     });
-    console.log(`Saved ${formattedDrawings.length} drawings for room ${roomId}`);
   } catch (error) {
-    console.error("Error storing drawings:", error);
+    console.error("Error storing drawing:", error);
   }
 }
 
-wss.on("connection", (ws: WebSocketWithRoom) => {
-  console.log("New WebSocket connection");
+async function clearRoomDrawings(roomId: string): Promise<void> {
+  try {
+    await prisma.drawing.deleteMany({
+      where: { roomId }
+    });
+    console.log(`Cleared drawings for room: ${roomId}`);
+  } catch (error) {
+    console.error("Error clearing drawings:", error);
+  }
+}
 
-  ws.on("message", async (message: string) => {
+// Broadcast to room clients
+const broadcastToRoom = (roomId: string, message: any, excludeClient?: WebSocketWithRoom) => {
+  const room = rooms[roomId];
+  if (!room) return;
+
+  room.clients.forEach(client => {
+    if (client !== excludeClient && client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(JSON.stringify(message));
+      } catch (error) {
+        console.error("Error broadcasting to client:", error);
+        room.clients.delete(client);
+      }
+    }
+  });
+};
+
+// Enhanced WebSocket connection handling
+wss.on("connection", (ws: WebSocketWithRoom) => {
+  ws.id = generateId();
+  ws.lastPing = Date.now();
+  
+  console.log(`New WebSocket connection: ${ws.id}`);
+
+  // Send welcome message
+  ws.send(JSON.stringify({
+    type: "connected",
+    clientId: ws.id,
+    timestamp: Date.now()
+  }));
+
+  ws.on("message", async (message: Buffer) => {
     try {
-      const parsedMessage = JSON.parse(message);
+      const parsedMessage = JSON.parse(message.toString());
       const { type, room, drawingData } = parsedMessage;
 
-      if (type === "join_room" && room) {
-        console.log(`Client joined room: ${room}`);
-        ws.room = room;
+      switch (type) {
+        case "join_room":
+          if (!room) {
+            ws.send(JSON.stringify({ type: "error", message: "Room ID required" }));
+            return;
+          }
 
-        if (!rooms[room]) {
-          rooms[room] = {
-            clients: new Set(),
-            drawings: []
-          };
-        }
+          console.log(`Client ${ws.id} joined room: ${room}`);
+          ws.room = room;
 
-        rooms[room].clients.add(ws);
+          // Initialize room if it doesn't exist
+          if (!rooms[room]) {
+            rooms[room] = {
+              clients: new Set(),
+              drawings: [],
+              lastActivity: Date.now()
+            };
+          }
 
-        const initialData = await getDrawingsFromDB(room);
-        ws.send(JSON.stringify({
-          type: "initial_drawings",
-          data: initialData
-        }));
-      }
+          const roomData = rooms[room];
+          roomData.clients.add(ws);
+          roomData.lastActivity = Date.now();
 
-      if (type === "drawing" && room && drawingData) {
-        if (!rooms[room]) {
-          console.warn(`Received drawing for non-existent room: ${room}`);
-          return;
-        }
-        rooms[room].drawings.push(drawingData);
-        
-        rooms[room].clients.forEach(client => {
-          console.log("drawing data real time",drawingData);
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: "drawing",
-              drawingData
+          // Send initial drawings
+          try {
+            const initialDrawings = await getDrawingsFromDB(room);
+            ws.send(JSON.stringify({
+              type: "initial_drawings",
+              data: initialDrawings,
+              roomId: room,
+              clientCount: roomData.clients.size
+            }));
+
+            // Notify other clients about new user
+            broadcastToRoom(room, {
+              type: "user_joined",
+              clientId: ws.id,
+              clientCount: roomData.clients.size
+            }, ws);
+          } catch (error) {
+            console.error("Error sending initial drawings:", error);
+            ws.send(JSON.stringify({ 
+              type: "error", 
+              message: "Failed to load drawings" 
             }));
           }
-        });
+          break;
+
+        case "drawing":
+          if (!room || !drawingData) {
+            ws.send(JSON.stringify({ type: "error", message: "Invalid drawing data" }));
+            return;
+          }
+
+          if (!rooms[room]) {
+            console.warn(`Received drawing for non-existent room: ${room}`);
+            return;
+          }
+
+          // Add metadata to drawing
+          const enhancedDrawing = {
+            ...drawingData,
+            id: generateId(),
+            timestamp: Date.now(),
+            clientId: ws.id
+          };
+
+          // Store in room memory
+          rooms[room].drawings.push(enhancedDrawing);
+          rooms[room].lastActivity = Date.now();
+
+          // Store in database asynchronously
+          storeDrawingToDb(room, enhancedDrawing).catch(error => {
+            console.error("Failed to store drawing in DB:", error);
+          });
+
+          // Broadcast to other clients
+          broadcastToRoom(room, {
+            type: "drawing",
+            drawingData: enhancedDrawing
+          }, ws);
+
+          console.log(`Drawing received for room ${room} from client ${ws.id}`);
+          break;
+
+        case "clear_canvas":
+          if (!room) {
+            ws.send(JSON.stringify({ type: "error", message: "Room ID required" }));
+            return;
+          }
+
+          if (!rooms[room]) {
+            return;
+          }
+
+          // Clear room drawings
+          rooms[room].drawings = [];
+          rooms[room].lastActivity = Date.now();
+
+          // Clear database
+          clearRoomDrawings(room).catch(error => {
+            console.error("Failed to clear drawings from DB:", error);
+          });
+
+          // Broadcast to all clients in room
+          broadcastToRoom(room, {
+            type: "canvas_cleared",
+            clearedBy: ws.id
+          });
+
+          console.log(`Canvas cleared for room ${room} by client ${ws.id}`);
+          break;
+
+        case "ping":
+          ws.lastPing = Date.now();
+          ws.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+          break;
+
+        default:
+          console.log(`Unknown message type: ${type}`);
       }
     } catch (error) {
       console.error("Error handling message:", error);
+      ws.send(JSON.stringify({ 
+        type: "error", 
+        message: "Invalid message format" 
+      }));
     }
   });
 
-  ws.on("close", () => {
-  console.log("Closing WebSocket connection for room:", ws.room);
-  if (ws.room && rooms[ws.room]) {
-    const room = rooms[ws.room];
-    room?.clients.delete(ws);
+  ws.on("close", (code, reason) => {
+    console.log(`WebSocket connection closed: ${ws.id}, code: ${code}, reason: ${reason.toString()}`);
+    
+    if (ws.room && rooms[ws.room]) {
+      const room = rooms[ws.room];
+      room!.clients.delete(ws);
 
-    if (room?.clients.size === 0) {
-      console.log(`Saving drawings for room ${ws.room}`);
+      // Notify other clients about user leaving
+      broadcastToRoom(ws.room, {
+        type: "user_left",
+        clientId: ws.id,
+        clientCount: room!.clients.size
+      });
 
-      storeDrawingsToDb(ws.room, room.drawings)
-        .then(() => {
-          console.log("Drawings saved successfully. Cleaning up room:", ws.room);
-          if (ws.room) {
-            delete rooms[ws.room];
+      // If room is empty, clean up after delay
+      if (room!.clients.size === 0) {
+        console.log(`Room ${ws.room} is empty, will clean up after delay`);
+        setTimeout(() => {
+          // @ts-ignore
+          if (rooms[ws.room!] && rooms[ws.room].clients.size === 0) {
+            console.log(`Cleaning up empty room: ${ws.room}`);
+            delete rooms[ws.room!];
           }
-        })
-        .catch((error) => {
-          console.error("Error saving drawings:", error);
-        });
+        }, 5000); // 5 second delay
+      }
     }
+  });
+
+  ws.on("error", (error) => {
+    console.error(`WebSocket error for client ${ws.id}:`, error);
+  });
+
+  // Send ping every 30 seconds to keep connection alive
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    } else {
+      clearInterval(pingInterval);
+    }
+  }, 30000);
+
+  ws.on("pong", () => {
+    ws.lastPing = Date.now();
+  });
+});
+
+// Cleanup inactive rooms every 10 minutes
+setInterval(cleanupInactiveRooms, 10 * 60 * 1000);
+
+// REST API endpoints
+app.use(express.json());
+
+// Health check
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    status: "OK",
+    message: "WebSocket drawing server is running",
+    rooms: Object.keys(rooms).length,
+    connections: Array.from(Object.values(rooms)).reduce((total, room) => total + room.clients.size, 0),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Get room info
+// @ts-ignore
+app.get("/room/:roomId", (req: Request, res: Response) => {
+  const { roomId } = req.params;
+  const room = rooms[roomId!];
+  
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  res.json({
+    roomId,
+    clientCount: room.clients.size,
+    drawingCount: room.drawings.length,
+    lastActivity: room.lastActivity
+  });
+});
+
+// Clear room drawings (REST endpoint)
+// @ts-ignore
+app.delete("/api/drawings", async (req: Request, res: Response) => {
+  const { roomId } = req.query;
+  
+  if (!roomId || typeof roomId !== 'string') {
+    return res.status(400).json({ error: "Room ID required" });
+  }
+
+  try {
+    await clearRoomDrawings(roomId);
+    
+    // Clear in-memory drawings
+    if (rooms[roomId]) {
+      rooms[roomId].drawings = [];
+    }
+
+    res.json({ success: true, message: "Drawings cleared" });
+  } catch (error) {
+    console.error("Error clearing drawings:", error);
+    res.status(500).json({ error: "Failed to clear drawings" });
   }
 });
+
+// Error handling middleware
+app.use((error: Error, req: Request, res: Response, next: any) => {
+  console.error("Express error:", error);
+  res.status(500).json({ error: "Internal server error" });
 });
 
-// Health check endpoint
-app.get("/", (req: Request, res: Response) => {
-  res.send("WebSocket server is running");
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('HTTP server closed');
+    prisma.$disconnect().then(() => {
+      console.log('Database connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`WebSocket server running on port ${PORT}`);
+  console.log(`Health check available at http://localhost:${PORT}`);
 });
