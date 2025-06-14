@@ -4,6 +4,10 @@ import prisma from "@repo/db/client";
 import WebSocket, { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { Drawing, WebSocketWithRoom, RoomData } from "./types";
+import { generateId } from "../utils/generateId";
+import { getDrawingsFromDB } from "../utils/getDrawingFromDB";
+import { storeDrawingToDb } from "../utils/storeDrawingsToDB";
+import { clearRoomDrawings } from "../utils/clearDrawings";
 
 dotenv.config();
 
@@ -19,11 +23,7 @@ const wss = new WebSocketServer({
   perMessageDeflate: false // Disable compression for better performance
 });
 
-
 const rooms: Record<string, RoomData> = {};
-
-// Utility functions
-const generateId = () => Math.random().toString(36).substr(2, 9);
 
 const cleanupInactiveRooms = () => {
   const now = Date.now();
@@ -37,71 +37,6 @@ const cleanupInactiveRooms = () => {
     }
   });
 };
-
-// Enhanced database functions
-async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
-  try {
-    const drawings = await prisma.drawing.findMany({
-      where: { roomId },
-      orderBy: { createdAt: "asc" },
-    });
-    console.log("get drawings from db",drawings);
-    return drawings.map((d) => ({
-      id: d.id,
-      type: d.type as Drawing['type'],
-      points: d.points as [number, number][] || undefined,
-      startPoint: d.startX !== null && d.startY !== null 
-        ? { x: d.startX, y: d.startY } 
-        : undefined,
-      width: d.width ?? undefined,
-      height: d.height ?? undefined,
-      center: d.centerX !== null && d.centerY !== null 
-        ? { x: d.centerX, y: d.centerY } 
-        : undefined,
-      radius: d.radius ?? undefined,
-      color: d.color,
-      size: d.size || 2,
-      timestamp: d.createdAt.getTime()
-    }));
-  } catch (error) {
-    console.error("Error fetching drawings:", error);
-    return [];
-  }
-}
-
-async function storeDrawingToDb(roomId: string, drawing: Drawing): Promise<void> {
-  try {
-    await prisma.drawing.create({
-      data: {
-        roomId,
-        type: drawing.type,
-        points: drawing.points || undefined,
-        startX: drawing.startPoint?.x ?? null,
-        startY: drawing.startPoint?.y ?? null,
-        width: drawing.width ?? null,
-        height: drawing.height ?? null,
-        centerX: drawing.center?.x ?? null,
-        centerY: drawing.center?.y ?? null,
-        radius: drawing.radius ?? null,
-        color: drawing.color,
-        size: drawing.size ?? 2,
-      }
-    });
-  } catch (error) {
-    console.error("Error storing drawing:", error);
-  }
-}
-
-async function clearRoomDrawings(roomId: string): Promise<void> {
-  try {
-    await prisma.drawing.deleteMany({
-      where: { roomId }
-    });
-    console.log(`Cleared drawings for room: ${roomId}`);
-  } catch (error) {
-    console.error("Error clearing drawings:", error);
-  }
-}
 
 // Broadcast to room clients
 const broadcastToRoom = (roomId: string, message: any, excludeClient?: WebSocketWithRoom) => {
