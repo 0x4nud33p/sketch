@@ -53,14 +53,14 @@ export default function SignUpWithGoogle() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
-            className="w-full bg-[#fef08a] text-black border border-black p-3 rounded-lg flex items-center justify-center hover:bg-[#fef08a]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#fef08a] text-black border border-black p-3 rounded-lg flex items-center justify-center hover:bg-[#fef08a]/90 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             onClick={handleGoogleSignUp}
             disabled={loading}
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin mr-2" />
             ) : (
-              <FaGoogle className="mr-2 h-4 w-4" />
+              <FaGoogle className="mr-2 h-4 w-4 cursor-pointer" />
             )}
             Sign In with Google
           </Button>
