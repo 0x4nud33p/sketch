@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import prisma from "@repo/db/client";
 import WebSocket, { WebSocketServer } from 'ws';
 import { createServer } from 'http';
-import { Drawing, WebSocketWithRoom, RoomData } from "./types";
+import { WebSocketWithRoom, RoomData } from "./types";
 import { generateId } from "../utils/generateId";
 import { getDrawingsFromDB } from "../utils/getDrawingFromDB";
 import { storeDrawingToDb } from "../utils/storeDrawingsToDB";
