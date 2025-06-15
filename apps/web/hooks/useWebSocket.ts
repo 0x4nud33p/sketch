@@ -1,4 +1,3 @@
-// useWebSocket.ts - Custom hook for WebSocket logic
 import { useEffect, useRef, useState } from 'react';
 import { Drawing, WSMessage } from '../../web/app/canvas/types';
 

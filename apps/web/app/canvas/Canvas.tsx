@@ -12,6 +12,7 @@ import { Controls } from "./Controls";
 import { redirect, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Drawing, Point } from "./types";
+import { toast } from "sonner";
 
 // Enhanced drawing function with better type safety
 const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
@@ -174,7 +175,9 @@ const Canvas = () => {
 
     ws.onerror = (error) => {
       console.error("WebSocket error:", error);
+      toast.error("WebSocket Connection error");
       setConnectionStatus("disconnected");
+      return;
     };
   }, []);
 
@@ -322,7 +325,10 @@ const Canvas = () => {
           if (updated.type === "pencil") {
             updated = {
               ...updated,
-              points: [...(prev.type === "pencil" && prev.points ? prev.points : []), { x, y }],
+              points: [
+                ...(prev.type === "pencil" && prev.points ? prev.points : []),
+                { x, y },
+              ],
             };
           }
           break;
@@ -376,7 +382,6 @@ const Canvas = () => {
 
   return (
     <div className="w-screen h-screen overflow-hidden relative">
-      {/* Connection Status Indicator */}
       <div className="absolute top-4 right-4 z-30">
         <div
           className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -393,7 +398,6 @@ const Canvas = () => {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="border-yellow-300">
         <Controls
           onColorChange={setColor}
@@ -404,7 +408,6 @@ const Canvas = () => {
         />
       </div>
 
-      {/* Canvas */}
       <canvas
         ref={canvasRef}
         className="bg-[#18181b] top-0 left-0 w-full h-full cursor-crosshair"
@@ -418,7 +421,6 @@ const Canvas = () => {
         }}
       />
 
-      {/* Zoom Controls */}
       <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
         <button
           onClick={handleZoomIn}
@@ -443,7 +445,6 @@ const Canvas = () => {
         </button>
       </div>
 
-      {/* Zoom Level Indicator */}
       <div className="absolute bottom-4 left-20 bg-black/50 text-white px-2 py-1 rounded text-sm">
         {Math.round(zoomLevel * 100)}%
       </div>
