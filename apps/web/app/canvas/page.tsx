@@ -1,6 +1,6 @@
 "use client";
 
-import Canvas from "../../components/canvas/Canvas";
+import Canvas from "@/components/canvas/Canvas";
 
 const DrawingPage: React.FC = () => {
   return <Canvas />;

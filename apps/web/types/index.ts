@@ -84,3 +84,8 @@ export interface RoomCreationPopupProps {
   newRoomName: string;
   setNewRoomName: (value: string) => void;
 }
+
+export interface IconButtonWithTooltipProps {
+  label: string;
+  children: React.ReactNode;
+}

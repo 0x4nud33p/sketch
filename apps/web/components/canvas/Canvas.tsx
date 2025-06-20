@@ -242,15 +242,16 @@ const Canvas = () => {
   };
 
   return (
-    <div className="w-screen h-screen overflow-hidden relative">
-      <div className="absolute top-4 right-4 z-30">
+    <div className="w-screen h-screen overflow-hidden relative bg-[#18181b]">
+  {/* Connection Status Indicator */}
+      <div className="absolute top-4 left-4 z-30">
         <div
           className={`px-3 py-1 rounded-full text-sm font-medium ${
             connectionStatus === "connected"
-              ? "text-green-800"
+              ? "text-green-800 bg-green-200"
               : connectionStatus === "connecting"
-                ? "text-yellow-800"
-                : "text-red-800"
+                ? "text-yellow-800 bg-yellow-200"
+                : "text-red-800 bg-red-200"
           }`}
         >
           {connectionStatus === "connected" && " Connected"}
@@ -259,7 +260,8 @@ const Canvas = () => {
         </div>
       </div>
 
-      <div className="border-yellow-300">
+      {/* Controls - now positioned properly */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
         <Controls
           onColorChange={setColor}
           currentColor={color}
@@ -276,9 +278,10 @@ const Canvas = () => {
         />
       </div>
 
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="bg-[#18181b] top-0 left-0 w-full h-full cursor-crosshair"
+        className="absolute top-0 left-0 w-full h-full cursor-crosshair"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -289,34 +292,36 @@ const Canvas = () => {
         }}
       />
 
-      <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
-        <button
-          onClick={handleZoomIn}
-          className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white text-xl rounded-full flex items-center justify-center shadow-lg transition-colors"
-          title="Zoom In"
-        >
-          +
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white text-xl rounded-full flex items-center justify-center shadow-lg transition-colors"
-          title="Zoom Out"
-        >
-          -
-        </button>
-        <button
-          onClick={handleResetZoom}
-          className="w-10 h-10 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-full flex items-center justify-center shadow-lg transition-colors"
-          title="Reset Zoom"
-        >
-          ⌂
-        </button>
-      </div>
-
-      <div className="absolute bottom-4 left-20 bg-black/50 text-white px-2 py-1 rounded text-sm">
-        {Math.round(zoomLevel * 100)}%
-      </div>
+  {/* Zoom Controls */}
+    <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
+      <button
+        onClick={handleZoomIn}
+        className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white text-xl rounded-full flex items-center justify-center shadow-lg transition-colors"
+        title="Zoom In"
+      >
+        +
+      </button>
+      <button
+        onClick={handleZoomOut}
+        className="w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white text-xl rounded-full flex items-center justify-center shadow-lg transition-colors"
+        title="Zoom Out"
+      >
+        -
+      </button>
+      <button
+        onClick={handleResetZoom}
+        className="w-10 h-10 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-full flex items-center justify-center shadow-lg transition-colors"
+        title="Reset Zoom"
+      >
+        ⌂
+      </button>
     </div>
+
+    {/* Zoom Level Indicator */}
+    <div className="absolute bottom-4 left-20 bg-black/50 text-white px-2 py-1 rounded text-sm z-20">
+      {Math.round(zoomLevel * 100)}%
+    </div>
+  </div>
   );
 };
 
