@@ -1,9 +1,15 @@
-import Index from "pages/Index";
+import NavBar from "@/components/NavBar";
+import Hero from "@/components/Hero";
+import Features from "@/components/Features";
 
-export default function Home() {
+const Home = () => {
   return (
-    <>
-     <Index />
-    </>
+    <div className="min-h-screen bg-[#18181b] text-foreground text-[#ffffff]">
+      <NavBar />
+      <Hero />
+      <Features />
+    </div>
   );
-}
+};
+
+export default Home;

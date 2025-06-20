@@ -7,13 +7,12 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { ShapeType } from "./types";
-import { Controls } from "./Controls";
+import { clearCanvas } from "@/utils/clearCanvas";
+import { drawShape } from "@/utils/drawShape";
+import { Controls } from "@/components/canvas/Controls";
+import { ShapeType, Drawing, Point } from "@/types/index";
 import { redirect, useSearchParams } from "next/navigation";
-import axios from "axios";
-import { Drawing, Point } from "./types";
-import { toast } from "sonner";
-import { drawShape } from "utils/drawShape";
+import { useConnectWebSocket } from "@/hooks/useConnectWebSocket";
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,10 +31,9 @@ const Canvas = () => {
 
   // Room and drawings state
   const [roomId, setRoomId] = useState<string>("");
-  const [drawings, setDrawings] = useState<Drawing[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<
-    "connecting" | "connected" | "disconnected"
-  >("connecting");
+  //custom hooks
+  const { connectWebSocket, connectionStatus, drawings, setDrawings } =
+    useConnectWebSocket();
 
   // Memoize all drawings for better performance
   const allDrawings = useMemo(() => {
@@ -55,7 +53,6 @@ const Canvas = () => {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.scale(dpr, dpr);
-        // Preserve canvas styles after resize
         ctx.imageSmoothingEnabled = true;
       }
     };
@@ -63,71 +60,6 @@ const Canvas = () => {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // WebSocket connection management
-  const connectWebSocket = useCallback((roomIdParam: string) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.close();
-    }
-
-    const ws = new WebSocket("ws://localhost:8080");
-    wsRef.current = ws;
-    setConnectionStatus("connecting");
-
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-      setConnectionStatus("connected");
-      ws.send(JSON.stringify({ type: "join_room", room: roomIdParam }));
-
-      // Clear any existing reconnection timeout
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "initial_drawings") {
-          if (Array.isArray(data.data)) {
-            setDrawings(data.data);
-          } else {
-            console.error("Invalid initial_drawings data:", data.data);
-          }
-        } else if (data.type === "drawing") {
-          const shape = data.drawingData;
-          if (shape) {
-            setDrawings((prev) => [...prev, shape]);
-          } else {
-            console.error("Invalid drawing data:", data);
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-
-    ws.onclose = (event) => {
-      console.log("WebSocket closed:", event.code, event.reason);
-      setConnectionStatus("disconnected");
-
-      // Auto-reconnect after 3 seconds if not intentionally closed
-      if (event.code !== 1000) {
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log("Attempting to reconnect...");
-          connectWebSocket(roomIdParam);
-        }, 3000);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      toast.error("WebSocket Connection error");
-      setConnectionStatus("disconnected");
-    };
   }, []);
 
   // Room setup and WebSocket initialization
@@ -143,6 +75,7 @@ const Canvas = () => {
 
     return () => {
       if (reconnectTimeoutRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
@@ -151,27 +84,6 @@ const Canvas = () => {
       }
     };
   }, [searchParams, connectWebSocket]);
-
-  // Clear canvas function
-  const clearCanvas = async () => {
-    try {
-      await axios.delete(`/api/drawings?roomId=${roomId}`);
-      setDrawings([]);
-      setCurrentDrawing(null);
-
-      // Notify other clients about canvas clear
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({
-            type: "clear_canvas",
-            room: roomId,
-          })
-        );
-      }
-    } catch (error) {
-      console.error("Failed to clear canvas", error);
-    }
-  };
 
   // Optimized redraw function
   const redraw = useCallback(() => {
@@ -192,7 +104,7 @@ const Canvas = () => {
     ctx.translate(panOffset.x, panOffset.y);
 
     // Draw all shapes
-    allDrawings.forEach((shape) => drawShape(ctx, shape));
+    allDrawings.forEach((shape) => drawShape(ctx, shape as Drawing));
 
     ctx.restore();
   }, [allDrawings, zoomLevel, panOffset]);
@@ -353,7 +265,14 @@ const Canvas = () => {
           currentColor={color}
           onShapeSelect={setSelectedShape}
           selectedShape={selectedShape}
-          onClear={clearCanvas}
+          onClear={() =>
+            clearCanvas({
+              roomId,
+              setDrawings,
+              setCurrentDrawing,
+              wsRef: wsRef as React.RefObject<WebSocket>,
+            })
+          }
         />
       </div>
 

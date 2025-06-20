@@ -1,26 +1,25 @@
 
-  export interface ControlsProps {
-    onColorChange: (color: string) => void;
-    currentColor: string;
-    onShapeSelect: (shape: ShapeType) => void;
-    selectedShape: ShapeType;
-    onClear: () => void;
-  }
-  
-  export interface ZoomControlsProps {
-    zoomLevel: number;
-    onZoomIn: () => void;
-    onZoomOut: () => void;
-    onResetZoom: () => void;
-  }
-  
-  export interface ConnectionStatusProps {
-    status: "connected" | "connecting" | "disconnected";
-    error?: string | null;
-    onReconnect?: () => void;
-  }
+export interface ControlsProps {
+  onColorChange: (color: string) => void;
+  currentColor: string;
+  onShapeSelect: (shape: ShapeType) => void;
+  selectedShape: ShapeType;
+  onClear: () => void;
+}
 
-  // types.ts
+export interface ZoomControlsProps {
+  zoomLevel: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onResetZoom: () => void;
+}
+
+export interface ConnectionStatusProps {
+  status: "connected" | "connecting" | "disconnected";
+  error?: string | null;
+  onReconnect?: () => void;
+}
+  
 export type ShapeType = 'pencil' | 'circle' | 'rectangle';
 
 export interface Point {
@@ -66,4 +65,22 @@ export interface ControlsProps {
   selectedShape: ShapeType;
   onColorChange: (color: string) => void;
   currentColor: string;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface RoomCardProps {
+  room: Room;
+  onJoin: (roomId: string) => void;
+}
+
+export interface RoomCreationPopupProps {
+  onCreate: () => void;
+  onCancel: () => void;
+  newRoomName: string;
+  setNewRoomName: (value: string) => void;
 }

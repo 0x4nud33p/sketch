@@ -6,7 +6,7 @@ import { Button } from "@repo/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
-import { Room, RoomCardProps, RoomCreationPopupProps } from "./types";
+import { Room, RoomCreationPopupProps } from "@/types/index";
 import RoomCard from "utils/RoomCard";
 
 export default function JoinRoomPage() {

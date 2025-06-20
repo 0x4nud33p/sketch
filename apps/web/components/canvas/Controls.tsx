@@ -1,8 +1,9 @@
+/* eslint-disable react/prop-types */
 "use client";
 
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Pencil, Square, Circle, X } from "lucide-react";
-import { ControlsProps, ShapeType } from "../../types/index";
+import { ControlsProps, ShapeType } from "@/types/index";
 
 interface IconButtonWithTooltipProps {
   label: string;
@@ -44,7 +45,7 @@ export const Controls: React.FC<ControlsProps> = ({
   ];
 
   return (
-    <div className="bg-[#18181b] flex justify-center items-center gap-4 p-4 z-10 relative">
+    <div className="bg-[#18181b] flex justify-center items-center gap-4 p-4 z-10">
       {tools.map(({ shape, Icon, label }) => (
         <IconButtonWithTooltip key={shape} label={label}>
           <button

@@ -1,4 +1,4 @@
-import { Drawing } from "../app/canvas/types"
+import { Drawing } from "@/types/index"
 
 export const drawShape = (ctx: CanvasRenderingContext2D, shape: Drawing) => {
     if (!shape) return;
