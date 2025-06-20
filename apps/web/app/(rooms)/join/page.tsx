@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@repo/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
-import { toast } from "sonner";
 import axios from "axios";
-import { Room, RoomCreationPopupProps } from "@/types/index";
+import { toast } from "sonner";
+import { Room } from "@/types/index";
 import RoomCard from "utils/RoomCard";
+import { Button } from "@repo/ui/button";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import RoomCreationPopup from "@/modals/RoomCreationModal";
+import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/card";
 
 export default function JoinRoomPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -17,22 +18,22 @@ export default function JoinRoomPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        setIsLoading(true);
-        const { data } = await axios.get<{ rooms: Room[] }>("/api/rooms");
-        setRooms(data.rooms);
-      } catch (error) {
-        console.error("Error fetching rooms:", error);
-        toast.error("Failed to fetch rooms. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchRooms();
   }, []);
 
+  const fetchRooms = async () => {
+    try {
+      setIsLoading(true);
+      const { data } = await axios.get<{ rooms: Room[] }>("/api/rooms");
+      setRooms(data.rooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      toast.error("Failed to fetch rooms. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleJoinRoom = (roomId: string) => {
     router.push(`/canvas?roomid=${encodeURIComponent(roomId)}`);
   };
@@ -124,49 +125,3 @@ export default function JoinRoomPage() {
   );
 }
 
-function RoomCreationPopup({
-  onCreate,
-  onCancel,
-  newRoomName,
-  setNewRoomName,
-}: RoomCreationPopupProps) {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-      <Card className="w-full max-w-md bg-zinc-800 border-zinc-700">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-center">
-            Create New Room
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-4 p-6">
-          <input
-            type="text"
-            placeholder="Enter Room Name"
-            value={newRoomName}
-            onChange={(e) => setNewRoomName(e.target.value)}
-            className="w-full p-3 rounded-lg bg-zinc-700 text-white border border-zinc-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            autoFocus
-            onKeyDown={(e) => e.key === "Enter" && onCreate()}
-          />
-
-          <div className="flex gap-3">
-            <Button
-              className="flex-1 bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-medium"
-              onClick={onCreate}
-              disabled={!newRoomName.trim()}
-            >
-              Create
-            </Button>
-            <Button
-              className="flex-1 bg-zinc-600 hover:bg-zinc-500 text-white font-medium"
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}

@@ -1,6 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@repo/ui/card";
-import { RoomCardProps } from "app/(rooms)/join/types";
-
+import { RoomCardProps } from "@/types/index";
 
 export default function RoomCard({ room, onJoin }: RoomCardProps) {
   return (
