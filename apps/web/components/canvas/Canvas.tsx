@@ -13,6 +13,7 @@ import { Controls } from "@/components/canvas/Controls";
 import { ShapeType, Drawing, Point } from "@/types/index";
 import { redirect, useSearchParams } from "next/navigation";
 import { useConnectWebSocket } from "@/hooks/useConnectWebSocket";
+import { toast } from "sonner";
 
 const Canvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,7 +68,6 @@ const Canvas = () => {
     const roomIdParam = searchParams?.get("roomid");
     if (!roomIdParam) {
       redirect("/join");
-      return;
     }
 
     setRoomId(roomIdParam);
@@ -233,6 +233,15 @@ const Canvas = () => {
     setCurrentDrawing(null);
   };
 
+  
+  // Share functionality
+  const onHandleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      console.log("Share URL copied to clipboard!");
+      toast("Share URL copied to clipboard!");
+    });
+  }
+
   // Zoom functions
   const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.1, 3));
   const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.1, 0.5));
@@ -243,7 +252,7 @@ const Canvas = () => {
 
   return (
     <div className="w-screen h-screen overflow-hidden relative bg-[#18181b]">
-  {/* Connection Status Indicator */}
+      {/* Connection Status Indicator */}
       <div className="absolute top-4 left-4 z-30">
         <div
           className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -267,6 +276,7 @@ const Canvas = () => {
           currentColor={color}
           onShapeSelect={setSelectedShape}
           selectedShape={selectedShape}
+          onHandleShare={onHandleShare}
           onClear={() =>
             clearCanvas({
               roomId,
@@ -292,7 +302,7 @@ const Canvas = () => {
         }}
       />
 
-  {/* Zoom Controls */}
+    {/* Zoom Controls */}
     <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-20">
       <button
         onClick={handleZoomIn}

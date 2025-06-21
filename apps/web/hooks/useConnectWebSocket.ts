@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 import { useCallback, useRef, useState } from "react";
-import { BaseDrawing } from "@/types/index"
+import { Drawing } from "@/types/index"
 
 
 type ConnectionStatus = "connected" | "disconnected" | "connecting";
@@ -11,7 +11,7 @@ export const useConnectWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
-  const [drawings, setDrawings] = useState<BaseDrawing[]>([]);
+  const [drawings, setDrawings] = useState<Drawing[]>([]);
 
   const connectWebSocket = useCallback((roomId: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {

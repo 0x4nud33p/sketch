@@ -20,12 +20,12 @@ const Footer = () => {
         className="max-w-7xl mx-auto py-10 flex flex-col md:flex-row justify-between items-center gap-6"
       >
         <div className="text-center md:text-left text-sm text-[#ffffff]">
-          © {new Date().getFullYear()} Brainly — All rights reserved.
+          © {new Date().getFullYear()} Sketch — All rights reserved.
         </div>
 
         <div className="flex gap-6 text-[#ffffff]">
           <Link
-            href="https://github.com/0x4nud33p/brainly"
+            href="https://github.com/0x4nud33p/sketch"
             target="_blank"
             className="hover:text-slate-400 transition-colors"
           >

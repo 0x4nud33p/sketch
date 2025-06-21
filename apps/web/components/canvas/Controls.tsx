@@ -1,15 +1,16 @@
 "use client";
 
-import { Pencil, Square, Circle, X } from "lucide-react";
+import { Pencil, Square, Circle, X, Share } from "lucide-react";
 import { ControlsProps, ShapeType } from "@/types/index";
 import { IconButtonWithTooltip } from "@/components/IconButtonWithTooltip";
 
-export const Controls: React.FC<ControlsProps> = ({
+export const Controls: React.FC<ControlsProps & { onHandleShare: () => void }> = ({
   onShapeSelect,
   onClear,
   selectedShape,
   onColorChange,
   currentColor,
+  onHandleShare,
 }) => {
   const tools = [
     { shape: "pencil" as ShapeType, Icon: Pencil, label: "Pencil" },
@@ -62,6 +63,15 @@ export const Controls: React.FC<ControlsProps> = ({
           aria-label="Clear Canvas"
         >
           <X size={20} color="currentColor" />
+        </button>
+      </IconButtonWithTooltip>
+      <IconButtonWithTooltip label="Share">
+        <button
+          className="w-10 h-10 flex justify-center items-center rounded-lg border-2 border-[#fef08a] text-[#fef08a] transition-all duration-300 hover:scale-110 hover:bg-[#fef08a] hover:text-black"
+          onClick={onHandleShare}
+          aria-label="Share"
+        >
+          <Share size={20} color="currentColor" />
         </button>
       </IconButtonWithTooltip>
     </div>
