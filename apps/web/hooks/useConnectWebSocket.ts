@@ -36,7 +36,7 @@ export const useConnectWebSocket = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-
+        console.log("📬 WebSocket message received:", data);
         if (data.type === "initial_drawings" && Array.isArray(data.data)) {
           setDrawings(data.data);
         } else if (data.type === "drawing" && data.drawingData) {

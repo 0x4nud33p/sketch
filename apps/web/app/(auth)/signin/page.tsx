@@ -5,14 +5,12 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@repo/ui/card";
 import { authClient } from "../../../lib/auth-client";
 import { motion } from "framer-motion";
 import { FaGoogle } from "react-icons/fa";
-import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
