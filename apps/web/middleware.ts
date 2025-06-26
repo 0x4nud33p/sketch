@@ -18,5 +18,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  //allow home page to be accessed without authentication
   matcher: ["/"],
+  // matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

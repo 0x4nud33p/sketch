@@ -1,3 +1,19 @@
+export type ConnectionStatus = "connected" | "disconnected" | "connecting" | "error";
+
+export interface WebSocketMessage {
+  type: string;
+  [key: string]: any;
+}
+
+export interface CanvasState {
+  zoomLevel: number;
+  panOffset: Point;
+  isDrawing: boolean;
+  selectedShape: ShapeType;
+  color: string;
+  startPoint: Point | null;
+  currentDrawing: Drawing | null;
+}
 
 export interface ControlsProps {
   onColorChange: (color: string) => void;
