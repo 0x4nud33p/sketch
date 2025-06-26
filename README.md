@@ -1,4 +1,4 @@
-# Sketch - Real-time Collaborative Whiteboard
+# Sketch - Real-time Collaborative Whiteboard [Demo-Video](https://youtu.be/nqh0m3Ls2YE)
 
 > A modern, real-time collaborative whiteboard application built with Next.js, WebSockets, and Prisma
 
@@ -202,7 +202,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 <div align="center">
 
-**[🌟 Star this repo](https://github.com/0x4nud33p/sketch)** • **[🍴 Fork it](https://github.com/0x4nud33p/sketch/fork)** • **[📱 Try the demo](https://your-demo-url.vercel.app)**
+**[🌟 Star this repo](https://github.com/0x4nud33p/sketch)** • **[🍴 Fork it](https://github.com/0x4nud33p/sketch/fork)** • **[📱 Try the demo](https://sketch-pji1og6kj-anudeep-avulas-projects.vercel.app)**
 
 Made with ❤️ by [Anudeep Avula](https://github.com/0x4nud33p)
 

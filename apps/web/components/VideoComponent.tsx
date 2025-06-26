@@ -1,48 +1,49 @@
 "use client";
 
-import React, { Ref, useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
 
-export default function Video() {
+const Video = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (videoRef.current) {
           if (entry?.isIntersecting) {
-            videoRef.current.play(); 
+            videoRef.current.play().catch((err) => {
+              console.warn("Video play interrupted:", err.message);
+            });
           } else {
-            videoRef.current.pause(); 
+            videoRef.current.pause();
           }
         }
       },
-      { threshold: 0.7 } 
+      { threshold: 0.7 }
     );
 
-    if (videoRef.current) {
-      observer.observe(videoRef.current);
-    }
+    const currentVideo = videoRef.current;
+    if (currentVideo) observer.observe(currentVideo);
 
     return () => {
-      if (videoRef.current) observer.unobserve(videoRef.current);
+      if (currentVideo) observer.unobserve(currentVideo);
     };
   }, []);
 
   return (
-    <section id="video" className=" my-10 drop-shadow-sm ">
-      <div className="  max-w-5xl max-h-4xl mx-auto  px-2">
-        <div className=" relative overflow-hidden rounded-xl shadow-2xl bg-black  ">
-          <video
-            src="https://res.cloudinary.com/dbghbvuhb/video/upload/v1744347121/sxafl0jua3fscb70f81b.mp4"
-            loop
-            muted
-            ref={videoRef}
-            playsInline
-            className=" w-full h-full  object-cover  rounded-xl"
-          >
-            Demo Video not found
-          </video>
-        </div>
+    <div className="aspect-video rounded-xl bg-slate-950 overflow-hidden">
+      <div className="relative overflow-hidden rounded-xl shadow-2xl bg-slate-950">
+        <video
+          src="https://res.cloudinary.com/dbghbvuhb/video/upload/v1750917189/h26di29ib3vhnfu8xzrx.mp4"
+          loop
+          muted
+          ref={videoRef}
+          playsInline
+          className="w-full h-full object-cover rounded-xl"
+        >
+          Your browser does not support the video tag.
+        </video>
       </div>
-    </section>
+    </div>
   );
-}
+};
+export default Video;
