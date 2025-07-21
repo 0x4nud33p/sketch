@@ -104,44 +104,6 @@
    
    Navigate to `http://localhost:3000` to start collaborating!
 
-## 📁 Project Architecture
-
-```
-sketch/
-├── apps/
-│   ├── web/                    # Next.js frontend application
-│   │   ├── app/               # App Router pages and layouts
-│   │   ├── components/        # Reusable React components
-│   │   ├── hooks/             # Custom React hooks
-│   │   └── lib/               # Utility functions and configs
-│   └── ws-backend/            # WebSocket server
-│       └── src/               # Server implementation
-├── packages/
-│   ├── db/                    # Prisma database schema and client
-│   ├── eslint-config/         # Shared ESLint configurations
-│   ├── typescript-config/     # Shared TypeScript configurations
-│   └── ui/                    # Shared UI component library
-└── turbo.json                 # Turborepo configuration
-```
-
-## 🔌 API Reference
-
-### Authentication Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/signin` | User authentication |
-| `GET` | `/api/auth/session` | Get current session |
-
-### Application Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/drawings` | Retrieve saved drawings |
-| `POST` | `/api/drawings` | Save drawing data |
-| `GET` | `/api/rooms` | List available rooms |
-| `POST` | `/api/rooms` | Create new collaboration room |
-
 ## 🧪 Development
 
 ### Available Scripts
@@ -167,17 +129,6 @@ pnpm lint:fix         # Fix ESLint issues
 pnpm type-check       # Run TypeScript checks
 ```
 
-### Code Style
-
-This project uses:
-- **ESLint** for code linting
-- **Prettier** for code formatting
-- **TypeScript** for type checking
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
 ### Development Workflow
 
 1. Fork the repository
@@ -185,18 +136,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 3. Make your changes and commit: `git commit -m 'Add amazing feature'`
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
-
-## 🙏 Acknowledgments
-
-- Inspired by [Excalidraw](https://excalidraw.com/) for the collaborative drawing experience
-- Built with modern web technologies and best practices
-- Special thanks to the open-source community
-
-## 📞 Support
-
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/0x4nud33p/sketch/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/0x4nud33p/sketch/discussions)
-- 📧 **Contact**: [anudeepavula009@example.com](mailto:anudeepavula009@example.com)
 
 ---
 
