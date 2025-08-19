@@ -1,5 +1,9 @@
 # Sketch - Real-time Collaborative Whiteboard [Demo-Video](https://youtu.be/nqh0m3Ls2YE)
 
+<div align="center">
+  <img src="./apps/web/public/images/home.png" alt="Landing Page" width="full">
+</div>
+
 > A modern, real-time collaborative whiteboard application built with Next.js, WebSockets, and Prisma
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)

@@ -8,7 +8,7 @@ export async function getDrawingsFromDB(roomId: string): Promise<Drawing[]> {
         orderBy: { createdAt: "asc" },
       });
       console.log("get drawings from db",drawings);
-      return drawings.map((d) => ({
+      return drawings.map((d: any) => ({
         id: d.id,
         type: d.type as Drawing['type'],
         points: d.points as [number, number][] || undefined,
